@@ -1,0 +1,20 @@
+{
+  "fitbit": {
+    "appUUID": "4078467c-fb01-4d2b-8e91-6e455480f4af",
+    "appType": "clockface",
+    "appDisplayName": "Day Maker",
+    "iconFile": "resources/icon.png",
+    "wipeColor": "#ffeb3b",
+    "requestedPermissions": [
+      "access_activity",
+      "access_user_profile",
+      "access_heart_rate",
+      "run_background"
+    ],
+    "i18n": {
+      "en": {
+        "name": "Day Maker"
+      }
+    }
+  }
+}

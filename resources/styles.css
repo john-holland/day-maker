@@ -1,0 +1,45 @@
+#background {
+  viewport-fill: #060A14;
+}
+
+#myLabel {
+  font-size: 80;
+  font-family: System-Bold;
+  text-length: 32;
+  text-anchor: middle;
+  x: 50%;
+  y: 50%+40;
+  fill: white;
+}
+
+.text {
+  font-family: SevilleSharp-Book;
+  fill: fb-white;
+  text-length: 1000;
+}
+
+.large {
+  font-size: 80;
+  font-weight: bold;
+  fill: mintcream;
+  width: 100%;
+  text-anchor: middle;
+}
+
+.medium {
+  font-size: 40;
+  fill: ghostwhite;
+  width: 100%;
+  text-anchor: middle;
+}
+
+.small {
+  font-size: 30;
+  fill: fb-white;
+  width: 100%;
+  text-anchor: middle;
+}
+
+.heartrate {
+  fill: crimson;
+}
