@@ -31,7 +31,8 @@ function getSettings() {
       minute: extractSetting('minute', 30),
       steps: extractSetting('steps', 50),
       showHeartRate: extractSetting('showheartrate', true, mapToBoolean),
-      disableAlarm: extractSetting('disableAlarm', false, mapToBoolean)
+      disableAlarm: extractSetting('disableAlarm', false, mapToBoolean),
+      showBatteryLevel: extractSetting('showBatteryLevel', true, mapToBoolean)
     }
 }
 

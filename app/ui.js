@@ -5,6 +5,7 @@ import * as util from "../common/utils"
 import { today as todayActivity, goals } from "user-activity"
 import { battery, charger } from "power";
 import { HeartRateSensor } from "heart-rate";
+import { View, $, $at } from '../common/view'
 
 const ALARM_HOUR = "hours"
 const ALARM_MINUTE = "minutes"
@@ -31,11 +32,18 @@ function getDayAbbreviation(day) {
   return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][day]
 }
 
-export class UserInterface {
-  alarm = new Alarm()
-  obtainedSettings = false
+let alarm = new Alarm()
+let obtainedSettings = false
+let heartRateMonitor = null
+let hrmCleanupTimeoutId = null
+let heartrate = '--'
+
+export class UserInterface extends View {  
+  name = 'default'
 
   constructor() {
+    this.alarm = alarm
+    this.obtainedSettings = obtainedSettings 
     try {
       this.alarm.loadSettings() 
       this.obtainedSettings = true
@@ -43,19 +51,28 @@ export class UserInterface {
       console.log('failed to read settings', e)
     }
     
-    this.stepGoalEl = document.getElementById("stepGoal")
-    this.calorieGoalEl = document.getElementById("calorieGoal")
-    this.floorsGoalEl = document.getElementById("floorsGoal")
-    this.activeMinutesGoalEl = document.getElementById("activeMinutesGoal")
-    this.batteryEl = document.getElementById("battery")
+    this.$ = $at('#default')
     
-    this.dateEl = document.getElementById("date")
-    this.heartRateDateEl = document.getElementById("heartRateDate")
-    this.heartRateEl = document.getElementById("heartRate")
+    this.el = this.$()
   }
 
-	render({ today, updateReceived }) {
-		let hours = today.getHours()
+  onMount() {
+    this.stepGoalEl = this.$("#stepGoal")
+    this.calorieGoalEl = this.$("#calorieGoal")
+    this.floorsGoalEl = this.$("#floorsGoal")
+    this.activeMinutesGoalEl = this.$("#activeMinutesGoal")
+    this.batteryEl = this.$("#battery")
+    
+    this.dateEl = this.$("#date")
+    this.heartRateDateEl = this.$("#heartRateDate")
+    this.heartRateEl = this.$("#heartRate")
+  }
+
+	onRender() {
+    let { today, updateReceived } = this
+    if (!('today' in this) || !('updateReceived' in this)) return;
+		
+    let hours = today.getHours()
 		let minutes = today.getMinutes()
 		let steps = this.alarm.buzzing ? this.alarm.stepsToGo() : this.alarm.steps
 
@@ -78,59 +95,20 @@ export class UserInterface {
       }
 		}
     
-    document.getElementById("time").text = `${hours}:${minutes}`
-    let dateString = `${getDayAbbreviation(today.getDay())} ${today.getDate()}`
+    this.$("#time").text = `${hours}:${minutes}`
     
-    if (this.alarm.showHeartRate) {
-      if (!this.heartRateMonitor) {
-        let hrm = this.heartRateMonitor = new HeartRateSensor()
-        let hrmEl = this.heartRateEl
-        let self = this
-        this.hrmCleanupTimeoutId = null
-        this.heartRateMonitor.onreading = function(e) {
-          if (!self.heartRateMonitor) return
-          
-          let heartrate = hrm.heartRate ? hrm.heartRate : '--'
-          hrmEl.text = `${heartrate}`
-          
-          if (self.hrmCleanupTimeoutId) {
-            //we don't want to keep getting heart rate while the watchface isn't being rendered,
-            // so we'll set a timeout for a minute assuming someone might want to glance back at their hr
-            clearTimeout(self.hrmCleanupTimeoutId)
-          }
-          
-          self.hrmCleanupTimeoutId = setTimeout(() => {
-            if (!self.heartRateMonitor) { 
-              return 
-            }
-            hrmEl.text = '--'
-            self.heartRateMonitor.stop()
-            self.heartRateMonitor = null
-          }, 60 * 1000)
-        }
-        this.heartRateMonitor.start()
-      }
-      
-      this.showHeartRate()
-      document.getElementById("heartRateDate").text = dateString
-    } else {
-      if (this.heartRateMonitor) {
-        this.heartRateMonitor.stop()
-        this.heartRateMonitor = null
-      }
-
-      this.hideHeartRate()
-      document.getElementById("date").text = dateString
-    }
+    this.renderHeartRate();
     
     this.renderGoals();
-
+    
  		if (!updateReceived && !this.obtainedSettings) {
-       document.getElementById("message").text = "Open App to set alarm"
+       this.$("#message").text = "Open App to set alarm"
+    } else if (this.alarm.disableAlarm) {
+      this.$("#message").text = `Alarm disabled for ${this.alarm.hour}:${util.zeroPad(this.alarm.minute)}`
     } else if (this.alarm.alarmShouldBuzz()) {
-			document.getElementById("message").text = steps + " " + getWakeupCallout()
+			this.$("#message").text = steps + " " + getWakeupCallout()
     } else {
-      document.getElementById("message").text = `${steps} steps at ${this.alarm.hour}:${util.zeroPad(this.alarm.minute)}`
+      this.$("#message").text = `${steps} steps at ${this.alarm.hour}:${util.zeroPad(this.alarm.minute)}`
     }
 	}
 
@@ -147,7 +125,7 @@ export class UserInterface {
   }
 
   renderGoals() {
-    let boundingBox = document.getElementById("background").getBBox()
+    let boundingBox = this.$().getBBox()
     
     let stepGoalColor = "#4cc2c4"
     let calorieGoalColor = "#E258A6"
@@ -176,5 +154,53 @@ export class UserInterface {
     this.calorieGoalEl.style.fill = (caloriesGoalPercentage < 1) ? calorieGoalColor : goalCompleteColor
     this.floorsGoalEl.style.fill = (floorsGoalPercentage < 1) ? floorsGoalColor : goalCompleteColor
     this.activeMinutesGoalEl.style.fill = (activeMinutesGoalPercentage < 1) ? activeMinutesGoalColor : goalCompleteColor
+  }
+
+  renderHeartRate() {
+    let dateString = `${getDayAbbreviation(this.today.getDay())} ${this.today.getDate()}`
+
+    if (this.alarm.showHeartRate && this.application) {
+      if (!heartRateMonitor) {
+        heartRateMonitor = new HeartRateSensor()
+        console.log('made heart rate sensor')
+        
+        let self = this
+        hrmCleanupTimeoutId = null
+        heartRateMonitor.onreading = function(e) {
+          if (!heartRateMonitor) return
+          
+          heartrate = heartRateMonitor.heartRate ? heartRateMonitor.heartRate : '--'
+          
+          if (hrmCleanupTimeoutId) {
+            //we don't want to keep getting heart rate while the watchface isn't being rendered,
+            // so we'll set a timeout for a minute assuming someone might want to glance back at their hr
+            clearTimeout(hrmCleanupTimeoutId)
+          }
+          
+          hrmCleanupTimeoutId = setTimeout(() => {
+            if (!heartRateMonitor) { 
+              return
+            }
+            heartrate = '--'
+            heartRateMonitor.stop()
+            heartRateMonitor = null
+          }, 60 * 1000)
+        }
+        heartRateMonitor.start()
+      }
+      
+      this.showHeartRate()
+      this.$("#heartRateDate").text = dateString
+      this.$("#heartRate").text = heartrate
+    } else {
+      if (heartRateMonitor) {
+        heartRateMonitor.stop()
+        heartRateMonitor = null
+        heartrate = '--'
+      }
+
+      this.hideHeartRate()
+      this.$("#date").text = dateString
+    }
   }
 }

@@ -11,6 +11,10 @@
       "access_heart_rate",
       "run_background"
     ],
+    "buildTargets": [
+      "higgs",
+      "meson"
+    ],
     "i18n": {
       "en": {
         "name": "Day Maker"

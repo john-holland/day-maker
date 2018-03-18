@@ -38,6 +38,11 @@ function mySettings(props) {
           label="Disable alarm"
           settingsKey="disableAlarm"
         />
+        
+        <Toggle
+          label="Show battery level screen"
+          settingsKey="showBatteryLevel"
+        />
       </Section>
     </Page>
   );

@@ -30,17 +30,18 @@ export class Alarm {
   buzzing = false
   dayBuzzed = -1 // i don't love -1 as initialization values, but getDate() returns 0-6
   
-	constructor({ hour = 8, minute = 0, steps = 50, showHeartRate = true, disableAlarm = false } = {}) {
+	constructor({ hour = 8, minute = 0, steps = 50, showHeartRate = true, disableAlarm = false, showBatteryLevel = true } = {}) {
 		this.hour = hour
 		this.minute = minute
 		this.steps = steps
     this.showHeartRate = showHeartRate
     this.disableAlarm = disableAlarm
+    this.showBatteryLevel = showBatteryLevel
   }
 
   loadSettings() {
     let settings = readFileSync(SETTINGS_FILENAME, "utf-8")
-    let { hour, minute, steps, showHeartRate, disableAlarm } = JSON.parse(settings)
+    let { hour, minute, steps, showHeartRate = true, disableAlarm = false, showBatteryLevel = true } = JSON.parse(settings)
     
     console.log('loaded settings: ' + settings)
     this.hour = hour
@@ -48,16 +49,18 @@ export class Alarm {
     this.steps = steps
     this.showHeartRate = showHeartRate
     this.disableAlarm = disableAlarm
+    this.showBatteryLevel = showBatteryLevel
   }
 
-	saveAlarmData({hour, minute, steps, showHeartRate, disableAlarm}) {
+	saveAlarmData({hour, minute, steps, showHeartRate, disableAlarm, showBatteryLevel}) {
     this.hour = hour
     this.minute = minute
     this.steps = steps
     this.showHeartRate = showHeartRate
     this.disableAlarm = disableAlarm
+    this.showBatteryLevel = showBatteryLevel
     
-    writeFileSync(SETTINGS_FILENAME, JSON.stringify({hour, minute, steps, showHeartRate, disableAlarm}), "utf-8")
+    writeFileSync(SETTINGS_FILENAME, JSON.stringify({hour, minute, steps, showHeartRate, disableAlarm, showBatteryLevel}), "utf-8")
 
     this.resetForUpdate()
 	}
@@ -86,9 +89,10 @@ export class Alarm {
       this.stepsSinceStart = -1
     }
 
-    let diffMinutes = Math.abs((hour * 60 + minute) - (this.hour * 60 + this.minute))
+    //time: 1:30 - 90, alarm: 2:00 90-120 = -30
+    let diffMinutes = (hour * 60 + minute) - (this.hour * 60 + this.minute)
     //if its passed or on the alarm time, and within a half hour, or we're already ringing
-    let shouldBuzz = (diffMinutes >= 0 && diffMinutes < 30) || this.buzzing
+    let shouldBuzz = (diffMinutes >= 0 && diffMinutes <= 30) || this.buzzing
     
 		//if the time is after the current and we haven't taken enough steps
 		if (shouldBuzz && this.stepsToGo() > 0) {

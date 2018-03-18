@@ -1,4 +1,4 @@
-#background {
+#default {
   viewport-fill: #060A14;
 }
 
@@ -25,6 +25,14 @@
   width: 100%;
   text-anchor: middle;
 }
+
+.stats {
+  font-size: 60;
+  fill: mintcream;
+  width: 100%;
+  text-anchor: middle;
+}
+
 
 .medium {
   font-size: 40;
