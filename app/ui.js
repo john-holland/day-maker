@@ -6,6 +6,7 @@ import { today as todayActivity, goals } from "user-activity"
 import { battery, charger } from "power";
 import { HeartRateSensor } from "heart-rate";
 import { View, $, $at } from '../common/view'
+import { display } from "display";
 
 const ALARM_HOUR = "hours"
 const ALARM_MINUTE = "minutes"
@@ -37,6 +38,18 @@ let obtainedSettings = false
 let heartRateMonitor = null
 let hrmCleanupTimeoutId = null
 let heartrate = '--'
+let stepGoalColor = "#4cc2c4"
+let calorieGoalColor = "#E258A6"
+let floorsGoalColor = "#FFE463"
+let activeMinutesGoalColor = "#FFAA63"
+let goalCompleteColor = "fb-green"
+const GOAL_COMPLETE_COLOR = "fb-green"
+let timeColor = 'mintcream'
+let dateColor = 'ghostwhite'
+let messageColor = 'fb-white'
+let batteryColor = 'fb-aqua'
+let slate = '#A84C5E'
+let heartrateColor = 'red'
 
 export class UserInterface extends View {  
   name = 'default'
@@ -66,6 +79,8 @@ export class UserInterface extends View {
     this.dateEl = this.$("#date")
     this.heartRateDateEl = this.$("#heartRateDate")
     this.heartRateEl = this.$("#heartRate")
+    
+    if (this.name === 'default') this.backgroundImageEl = this.$("#backgroundimage")
   }
 
 	onRender() {
@@ -101,8 +116,10 @@ export class UserInterface extends View {
     
     this.renderGoals();
     
+    this.adjustFontForTime()
+    
  		if (!updateReceived && !this.obtainedSettings) {
-       this.$("#message").text = "Open App to set alarm"
+     this.$("#message").text = "Open App to set alarm"
     } else if (this.alarm.disableAlarm) {
       this.$("#message").text = `Alarm disabled for ${this.alarm.hour}:${util.zeroPad(this.alarm.minute)}`
     } else if (this.alarm.alarmShouldBuzz()) {
@@ -126,20 +143,14 @@ export class UserInterface extends View {
 
   renderGoals() {
     let boundingBox = this.$().getBBox()
-    
-    let stepGoalColor = "#4cc2c4"
-    let calorieGoalColor = "#E258A6"
-    let floorsGoalColor = "#FFE463"
-    let activeMinutesGoalColor = "#FFAA63"
-    let goalCompleteColor = "fb-green"
-    
+    goalCompleteColor = this.shouldAdjustFontForNightTime() ? slate : GOAL_COMPLETE_COLOR
     let stepGoalPercentage = Math.min((todayActivity.local.steps || 0) / (goals.steps || 1), 1)
     let caloriesGoalPercentage = Math.min((todayActivity.local.calories || 0) / (goals.calories || 1), 1)
     let floorsGoalPercentage = Math.min((todayActivity.local.elevationGain || 0) / (goals.elevationGain || 1), 1)
     let activeMinutesGoalPercentage = Math.min((todayActivity.local.activeMinutes || 0) / (goals.activeMinutes || 1), 1)
 
     this.batteryEl.width = Math.floor(battery.chargeLevel) / 100 * boundingBox.width
-    this.batteryEl.style.fill = charger.connected ? "chartreuse" : "fb-aqua"
+    this.setBatteryColorForConnectedStatus()
 
     this.stepGoalEl.x = boundingBox.x
     this.stepGoalEl.width = stepGoalPercentage * boundingBox.width
@@ -154,6 +165,48 @@ export class UserInterface extends View {
     this.calorieGoalEl.style.fill = (caloriesGoalPercentage < 1) ? calorieGoalColor : goalCompleteColor
     this.floorsGoalEl.style.fill = (floorsGoalPercentage < 1) ? floorsGoalColor : goalCompleteColor
     this.activeMinutesGoalEl.style.fill = (activeMinutesGoalPercentage < 1) ? activeMinutesGoalColor : goalCompleteColor
+  }
+
+  setBatteryColorForConnectedStatus() {
+    this.batteryEl.style.fill = charger.connected ? "chartreuse" : "fb-aqua"
+  }
+
+  sendFitbitLogo() {
+    this.$('#logo').animate('click')
+  }
+
+  shouldAdjustFontForNightTime() {
+    let hour = this.today.getHours()
+    return this.alarm.adjustBrightness && !this.alarm.buzzing && (hour > 20 || hour < 7)
+  }
+
+  adjustFontForTime() {
+    let nightfontcolor = '#B72424'
+    let pinkplum = '#A63484'
+    let plumish = '#6651B0'
+    let warm = '#B55B52'
+    
+    if (this.shouldAdjustFontForNightTime() && !this.alarm.buzzing) {
+      this.$('#time').style.fill = nightfontcolor
+      this.dateEl.style.fill = nightfontcolor
+      this.heartRateDateEl.style.fill = nightfontcolor
+      this.heartRateEl.style.fill = nightfontcolor
+      this.$("#message").style.fill = nightfontcolor
+      this.batteryEl.style.fill = slate
+      this.stepGoalEl.style.fill = pinkplum
+      this.floorsGoalEl.style.fill = plumish
+      this.activeMinutesGoalEl.style.fill = warm
+    } else {
+      this.$('#time').style.fill = timeColor
+      this.dateEl.style.fill = dateColor
+      this.heartRateDateEl.style.fill = dateColor
+      this.heartRateEl.style.fill = heartrateColor
+      this.$("#message").style.fill = messageColor
+      this.setBatteryColorForConnectedStatus()
+      this.stepGoalEl.style.fill = stepGoalColor
+      this.floorsGoalEl.style.fill = floorsGoalColor
+      this.activeMinutesGoalEl.style.fill = activeMinutesGoalColor
+    }
   }
 
   renderHeartRate() {
@@ -202,5 +255,53 @@ export class UserInterface extends View {
       this.hideHeartRate()
       this.$("#date").text = dateString
     }
+  }
+  
+  showingWakeupImage = false
+  backgroundTransitionDuration = 5000
+  showOrHideWakeupImage() {
+    
+    let showbackground = !this.showingWakeupImage && this.alarm.showSunrise()
+    let hidebackground = this.showingWakeupImage && !this.alarm.showSunrise()
+    let doNothing = !(showbackground || hidebackground)
+    
+    if (!doNothing) console.log(`showbackground ${showbackground} hidebackground ${hidebackground} donothing ${doNothing}`)
+    
+    if (showbackground && this.backgroundImageEl.style.opacity < 1) {
+      this.showingWakeupImage = true
+      this.animateToOpacity = 1
+      requestAnimationFrame(this.requestAnimationFrame.bind(this))
+      
+      console.log('showed, trace:')
+      console.trace()
+
+      display.poke()
+    } else if (hidebackground && this.backgroundImageEl.style.opacity > 0) {
+      this.showingWakeupImage = false
+      this.animateToOpacity = 0
+      requestAnimationFrame(this.requestAnimationFrame.bind(this))
+      console.log('hid, trace:')
+      console.trace()
+    }
+  }
+
+  previousFrame = undefined
+  animationDuration = 5000
+
+  requestAnimationFrame(timestamp) {
+    let delta
+    if (this.previousFrame === undefined) delta = 16
+    else delta = timestamp - this.previousFrame
+    
+    if (this.animateToOpacity > this.backgroundImageEl.style.opacity) {
+      this.backgroundImageEl.style.opacity = this.backgroundImageEl.style.opacity + (delta / this.animationDuration)
+    } else if (this.animateToOpacity < this.backgroundImageEl.style.opacity) {
+      this.backgroundImageEl.style.opacity = this.backgroundImageEl.style.opacity - (delta / this.animationDuration)
+    } else {
+      this.previousFrame = undefined
+      return
+    }
+    
+    requestAnimationFrame(this.requestAnimationFrame.bind(this))
   }
 }

@@ -30,18 +30,37 @@ export class Alarm {
   buzzing = false
   dayBuzzed = -1 // i don't love -1 as initialization values, but getDate() returns 0-6
   
-	constructor({ hour = 8, minute = 0, steps = 50, showHeartRate = true, disableAlarm = false, showBatteryLevel = true } = {}) {
+	constructor({ hour = 8, minute = 0, steps = 50, 
+                showHeartRate = true, disableAlarm = false, 
+                showBatteryLevel = true, adjustBrightness = true,
+                bedtime = 23, logocounting = true, showWakeupImage = true,
+                silentInProgress = true } = {}) {
+    
 		this.hour = hour
 		this.minute = minute
 		this.steps = steps
     this.showHeartRate = showHeartRate
     this.disableAlarm = disableAlarm
     this.showBatteryLevel = showBatteryLevel
+    this.adjustBrightness = adjustBrightness
+    this.bedtime = bedtime
+    this.logocounting = logocounting
+    this.showWakeupImage = showWakeupImage
+    this.silentInProgress = silentInProgress
   }
 
   loadSettings() {
     let settings = readFileSync(SETTINGS_FILENAME, "utf-8")
-    let { hour, minute, steps, showHeartRate = true, disableAlarm = false, showBatteryLevel = true } = JSON.parse(settings)
+    let { hour, minute, steps, 
+          showHeartRate = true, 
+          disableAlarm = false, 
+          showBatteryLevel = true, 
+          adjustBrightness = true,  
+          bedtime = 23,
+          logocounting = true,
+          showWakeupImage = true,
+          silentInProgress = true
+        } = JSON.parse(settings)
     
     console.log('loaded settings: ' + settings)
     this.hour = hour
@@ -50,17 +69,37 @@ export class Alarm {
     this.showHeartRate = showHeartRate
     this.disableAlarm = disableAlarm
     this.showBatteryLevel = showBatteryLevel
+    this.adjustBrightness = adjustBrightness
+    this.bedtime = bedtime
+    this.logocounting = logocounting
+    this.showWakeupImage = showWakeupImage
+    this.silentInProgress = silentInProgress
   }
 
-	saveAlarmData({hour, minute, steps, showHeartRate, disableAlarm, showBatteryLevel}) {
+	saveAlarmData({hour, minute, steps, 
+                 showHeartRate, disableAlarm, 
+                 showBatteryLevel, adjustBrightness, 
+                 logocounting, bedtime, showWakeupImage,
+                 silentInProgress}) {
     this.hour = hour
     this.minute = minute
     this.steps = steps
     this.showHeartRate = showHeartRate
     this.disableAlarm = disableAlarm
     this.showBatteryLevel = showBatteryLevel
+    this.adjustBrightness = adjustBrightness
+    this.bedtime = bedtime
+    this.logocounting = logocounting
+    this.showWakeupImage = showWakeupImage
+    this.silentInProgress = silentInProgress
     
-    writeFileSync(SETTINGS_FILENAME, JSON.stringify({hour, minute, steps, showHeartRate, disableAlarm, showBatteryLevel}), "utf-8")
+    writeFileSync(SETTINGS_FILENAME, 
+      JSON.stringify({
+        hour, minute, steps, 
+        showHeartRate, disableAlarm, 
+        showBatteryLevel, adjustBrightness,
+        showWakeupImage, silentInProgress
+      }), "utf-8")
 
     this.resetForUpdate()
 	}
@@ -108,19 +147,39 @@ export class Alarm {
 		return false
 	}
 
+  stepsAsOf15SecondsAgo = {
+    timestamp: undefined,
+    steps: 0
+  }
+
 	buzz() {
 		if (!this.alarmShouldBuzz()) {
 			return
 		}
     
+    let timeInSeconds = new Date().getTime() / 1000
     if (!this.buzzing) {
       console.log('updating steps since start')
       this.stepsSinceStart = getCurrentStepCount()
+      this.stepsAsOf15SecondsAgo.timestamp = timeInSeconds + 15
+      this.stepsAsOf15SecondsAgo.steps = this.stepsSinceStart
     }
 
 		this.buzzing = true
-
-    vibration.start(getVibration())
+    
+    if (this.silentInProgress) {
+      //if we've seen no change in the last 15 seconds
+      if (timeInSeconds >= this.stepsAsOf15SecondsAgo.timestamp && 
+          this.stepsAsOf15SecondsAgo.steps === getCurrentStepCount()) {
+        //start vibrating!
+        vibration.start(getVibration())
+      } else if (timeInSeconds >= this.stepsAsOf15SecondsAgo.timestamp) {
+        //otherwise, just update timestamp to 15 seconds in the future
+        this.stepsAsOf15SecondsAgo.steps = getCurrentStepCount()
+      }
+    } else {
+      vibration.start(getVibration())
+    }
 	}
 
 	stepsToGo() {
@@ -133,6 +192,15 @@ export class Alarm {
     
     return (stepsToGo > 0) ? stepsToGo : 0
 	}
+
+  withinLogoRange() {
+    let hour = new Date().getHours()
+    return this.logocounting && hour >= this.bedtime - 1 && hour <= this.bedtime + 1
+  }
+
+  showSunrise() {
+    return this.showWakeupImage && this.buzzing
+  }
   
   getTimeoutIntervalDuration() {
     const THREE_SECONDS = 3 * 1000

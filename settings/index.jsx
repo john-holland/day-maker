@@ -40,9 +40,52 @@ function mySettings(props) {
         />
         
         <Toggle
+          label="No alarm while taking steps"
+          settingsKey="silentInProgress"
+        />
+        
+        <Text>
+          Your Fitbit will not vibrate while you are actively taking steps for your alarm.
+        </Text>
+        
+        <Toggle
           label="Show battery level screen"
           settingsKey="showBatteryLevel"
         />
+        
+        <Toggle
+          label="Time adjust screen"
+          settingsKey="adjustBrightness"
+        />
+        <Text>
+          Changes font / bar colors to be easier on the eyes.
+        </Text>
+        
+        <Toggle
+          label="Enable bedtime fitbit logo counting"
+          settingsKey="logocounting"
+          />
+        
+        <TextInput
+          label="Bedtime"
+          settingsKey="bedtime"
+          type="number"
+          placeholder="22"
+        />
+        
+        <Text>
+           Fitbit logos slowly float across the screen, count them to help fall asleep. Bedtime in hours (24 hour format.)
+        </Text>
+        
+        <Toggle
+          label="Show sunrise wakeup image"
+          settingsKey="showWakeupImage"
+        />
+        
+        <Text>
+           Shows a random, nice sunrise image. Images provided from https://unsplash.com/
+        </Text>
+
       </Section>
     </Page>
   );

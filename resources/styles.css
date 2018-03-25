@@ -33,6 +33,9 @@
   text-anchor: middle;
 }
 
+#backgroundimage {
+  fill: blue;
+}
 
 .medium {
   font-size: 40;

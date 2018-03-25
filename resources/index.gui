@@ -1,5 +1,8 @@
 <svg id="boundingbox">
   <svg id="default">
+
+    <image id="backgroundimage" width="100%" height="100%" opacity="0" href="/private/data/background.jpg" load="sync" x="0" y="0" />
+    
     <rect id="stepGoal" x="0%" y="0%" width="0%" height="3%" />
     <rect id="calorieGoal" x="0%" y="3%" width="0%" height="3%" />
     <rect id="floorsGoal" x="0%" y="6%" width="0%" height="3%" />
@@ -14,7 +17,13 @@
 
     <rect id="activeMinutesGoal" x="0%" y="95%" width="0%" height="3%" />
     <rect id="battery" x="0%" y="98%" width="0%" height="2%" />
+    
+    <image id="lefttoright" href="Fitbit_app_icon.png" load="sync" x="-50" y="125" height="50" width="50" opacity="0.5" />
+
+    <image id="righttoleft" href="Fitbit_app_icon.png" load="sync" x="120%" y="30%" height="50" width="50" opacity="0.5" />   
+    
   </svg>
+  
   <link rel="import" href="steps.gui" />
   <link rel="import" href="calories.gui" />
   <link rel="import" href="floors.gui" />

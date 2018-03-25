@@ -2,8 +2,8 @@
 import { Alarm } from "../common/alarm"
 import * as util from "../common/utils"
 import { today as todayActivity, goals } from "user-activity"
-import { $, $at } from '../common/view'
-import { UserInterface } from './ui'
+import { $, $at } from '../../common/view'
+import { UserInterface } from '../ui'
 
 let document = require("document");
 

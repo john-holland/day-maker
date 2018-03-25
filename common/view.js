@@ -146,7 +146,7 @@ export class View {
 export class Application extends View {
   // Current application screen.
   set screen( view ){
-    if( this._screen ) this.remove( this._screen );
+    if( this._screen && view.name != this._screen.name ) this.remove( this._screen );
 
     // Poke the display so it will be on after the screen switch...
     display.poke();

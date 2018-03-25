@@ -2,15 +2,15 @@
 import { Alarm } from "../common/alarm"
 import * as util from "../common/utils"
 import { today as todayActivity, goals } from "user-activity"
-import { $, $at } from '../common/view'
-import { UserInterface } from './ui'
+import { $, $at } from '../../common/view'
+import { UserInterface } from '../ui'
 
 let document = require("document");
 
-const $ = $at('#floors');
+const $ = $at('#calories');
 
-export class FloorsUI extends UserInterface {
-  name = 'floors'
+export class CaloriesUI extends UserInterface {
+  name = 'calories'
 
   constructor() {
     super()
@@ -20,6 +20,6 @@ export class FloorsUI extends UserInterface {
 
 	onRender() {
     super.onRender()
-    this.$("#time").text = `${todayActivity.local.elevationGain || 0} floors`
+    this.$("#time").text = `${todayActivity.local.calories || 0} cals`
 	}
 }
