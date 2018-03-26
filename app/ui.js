@@ -83,13 +83,13 @@ export class UserInterface extends View {
     if (this.name === 'default') this.backgroundImageEl = this.$("#backgroundimage")
   }
 
-	onRender() {
+  onRender() {
     let { today, updateReceived } = this
     if (!('today' in this) || !('updateReceived' in this)) return;
-		
+    
     let hours = today.getHours()
-		let minutes = today.getMinutes()
-		let steps = this.alarm.buzzing ? this.alarm.stepsToGo() : this.alarm.steps
+    let minutes = today.getMinutes()
+    let steps = this.alarm.buzzing ? this.alarm.stepsToGo() : this.alarm.steps
 
     if (minutes === 0) {
       minutes = "00"
@@ -97,18 +97,18 @@ export class UserInterface extends View {
       minutes = util.zeroPad(minutes)
     ]
     
-		if (is12Hour()) {
-			if (hours > 12) {
+    if (is12Hour()) {
+      if (hours > 12) {
         hours = hours % 12 || 12
-				minutes += " pm"
-			} else {
-				minutes += " am"
-			}
+        minutes += " pm"
+      } else {
+        minutes += " am"
+      }
       
       if (hours === 0) {
         hours = "12"
       }
-		}
+    }
     
     this.$("#time").text = `${hours}:${minutes}`
     
@@ -118,16 +118,16 @@ export class UserInterface extends View {
     
     this.adjustFontForTime()
     
- 		if (!updateReceived && !this.obtainedSettings) {
+    if (!updateReceived && !this.obtainedSettings) {
      this.$("#message").text = "Open App to set alarm"
     } else if (this.alarm.disableAlarm) {
       this.$("#message").text = `Alarm disabled for ${this.alarm.hour}:${util.zeroPad(this.alarm.minute)}`
     } else if (this.alarm.alarmShouldBuzz()) {
-			this.$("#message").text = steps + " " + getWakeupCallout()
+      this.$("#message").text = steps + " " + getWakeupCallout()
     } else {
       this.$("#message").text = `${steps} steps at ${this.alarm.hour}:${util.zeroPad(this.alarm.minute)}`
     }
-	}
+  }
 
   showHeartRate() {
     this.dateEl.style.visibility = "hidden"

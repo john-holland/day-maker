@@ -18,27 +18,29 @@ function dateProvider() {
 }
 
 function getCurrentStepCount() {
-	return today.local.steps || 0
+  return today.local.steps || 0
 }
 
 function getCurrentDay() {
   return (new Date()).getDay()
 }
 
+
+
 export class Alarm {
   stepsSinceStart = getCurrentStepCount()
   buzzing = false
   dayBuzzed = -1 // i don't love -1 as initialization values, but getDate() returns 0-6
   
-	constructor({ hour = 8, minute = 0, steps = 50, 
+  constructor({ hour = 8, minute = 0, steps = 50, 
                 showHeartRate = true, disableAlarm = false, 
                 showBatteryLevel = true, adjustBrightness = true,
                 bedtime = 23, logocounting = true, showWakeupImage = true,
                 silentInProgress = true } = {}) {
     
-		this.hour = hour
-		this.minute = minute
-		this.steps = steps
+    this.hour = hour
+    this.minute = minute
+    this.steps = steps
     this.showHeartRate = showHeartRate
     this.disableAlarm = disableAlarm
     this.showBatteryLevel = showBatteryLevel
@@ -76,7 +78,7 @@ export class Alarm {
     this.silentInProgress = silentInProgress
   }
 
-	saveAlarmData({hour, minute, steps, 
+  saveAlarmData({hour, minute, steps, 
                  showHeartRate, disableAlarm, 
                  showBatteryLevel, adjustBrightness, 
                  logocounting, bedtime, showWakeupImage,
@@ -102,7 +104,7 @@ export class Alarm {
       }), "utf-8")
 
     this.resetForUpdate()
-	}
+  }
 
   resetForUpdate() {
     this.stepsSinceStart = -1
@@ -110,13 +112,13 @@ export class Alarm {
     this.dayBuzzed = -1
   }
   
-	alarmShouldBuzz({getToday = dateProvider, 
+  alarmShouldBuzz({getToday = dateProvider, 
                    getHours = (day) => day.getHours(), 
                    getMinutes = (day) => day.getMinutes(),
                    getDay = (day) => day.getDay()} = {}) {
     let date = getToday()
-		let hour = getHours(date)
-		let minute = getMinutes(date)
+    let hour = getHours(date)
+    let minute = getMinutes(date)
     let today = getDay(date)
     
     if (this.disableAlarm) {
@@ -133,10 +135,10 @@ export class Alarm {
     //if its passed or on the alarm time, and within a half hour, or we're already ringing
     let shouldBuzz = (diffMinutes >= 0 && diffMinutes <= 30) || this.buzzing
     
-		//if the time is after the current and we haven't taken enough steps
-		if (shouldBuzz && this.stepsToGo() > 0) {
+    //if the time is after the current and we haven't taken enough steps
+    if (shouldBuzz && this.stepsToGo() > 0) {
       return true
-		}
+    }
     
     this.buzzing = false
     this.dayBuzzed = today
@@ -144,18 +146,18 @@ export class Alarm {
     //always turn it off if it shouldn't be vibrating
     vibration.stop()
 
-		return false
-	}
+    return false
+  }
 
   stepsAsOf15SecondsAgo = {
     timestamp: undefined,
     steps: 0
   }
 
-	buzz() {
-		if (!this.alarmShouldBuzz()) {
-			return
-		}
+  buzz() {
+    if (!this.alarmShouldBuzz()) {
+      return
+    }
     
     let timeInSeconds = new Date().getTime() / 1000
     if (!this.buzzing) {
@@ -165,7 +167,7 @@ export class Alarm {
       this.stepsAsOf15SecondsAgo.steps = this.stepsSinceStart
     }
 
-		this.buzzing = true
+    this.buzzing = true
     
     if (this.silentInProgress) {
       //if we've seen no change in the last 15 seconds
@@ -180,22 +182,23 @@ export class Alarm {
     } else {
       vibration.start(getVibration())
     }
-	}
+  }
 
-	stepsToGo() {
-		if (this.stepsSinceStart < 0) {
-			return this.steps
-		}
+  stepsToGo() {
+    if (this.stepsSinceStart < 0) {
+      return this.steps
+    }
 
     let diffSinceStart = getCurrentStepCount() - this.stepsSinceStart
-		let stepsToGo = this.steps - diffSinceStart
+    let stepsToGo = this.steps - diffSinceStart
     
     return (stepsToGo > 0) ? stepsToGo : 0
-	}
+  }
 
   withinLogoRange() {
-    let hour = new Date().getHours()
-    return this.logocounting && hour >= this.bedtime - 1 && hour <= this.bedtime + 1
+    let timeMinutes = this.getTimeInMinutes()
+    let bedtime = this.bedtime * 60
+    return this.logocounting && Math.abs(timeMinutes - bedtime) <= 30
   }
 
   showSunrise() {
@@ -222,4 +225,14 @@ export class Alarm {
     
     return TWENTY_MINUTES
   }
+
+  getTimeInMinutes() {
+    let today = new Date()
+    return today.getHours() * 60 + today.getMinutes()
+  }
+
+  getAlarmTimeInMinutes() {
+    return this.hour * 60 + this.minute
+  }
+
 }

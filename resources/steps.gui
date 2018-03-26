@@ -1,4 +1,4 @@
-<svg id="steps" display="none">
+<svg id="steps">
   <rect id="stepGoal" x="0%" y="0%" width="0%" height="3%" />
   <rect id="calorieGoal" x="0%" y="3%" width="0%" height="3%" opacity="0.50" />
   <rect id="floorsGoal" x="0%" y="6%" width="0%" height="3%" opacity="0.50" />

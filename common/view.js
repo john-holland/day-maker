@@ -157,6 +157,8 @@ export class Application extends View {
   
   get screen(){ return this._screen; }
   
+  onStart(){}
+  
   // Switch the screen
   static switchTo( screenName ){
     const { instance } = Application;
@@ -170,6 +172,8 @@ export class Application extends View {
     // Instantiate and mount an application.
     const app = Application.instance = new this();
     app.mount();
+    
+    app.onStart();
     
     // Refresh UI when the screen in on.
     display.onchange = () => {

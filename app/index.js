@@ -15,11 +15,36 @@ import { ActiveMinutesUI } from './views/activeminutes'
 import { BatteryLevelUI } from './views/batterylevel'
 
 /**
-  think about implementing a unified timeline to allow for multiple alarms, events, calendar syncing etc
+goal: this watchface should help you go about your day
+
+investigate: see if there's any lightweight ml for identifying common areas
+  -> see if we could use this to let us do interesting / helpful things like:
+    "hey you've been on the computer for 2 hours, think about taking a break!" if we can detect keyboard accelerometer
+    might need a training mode? could be better just to detect lack of steps
+    Could also be good to detect a similar motion, and just say something along the lines of,
+      "hey you've been at this for a whlle, maybe take a break?"
+    could we identify when they're going out the door?
+      - we could do a "hey dont forget your lunch etc" type thing
+      - even without ml meal time reminders might help some people
+      
+  -> identifying the days / times wearer usually takes walks?
+      
+  monitor battery life, see about improvements / profiling
+
+ideas:
   move the DayMaker class into another file
-  think about fitness / health oriented features
   get a running average battery life & display it on the battery screen?
+  on the steps screen, introduce a "x minute walk to reach step goal" based on average pace
+  think about what activity.onreachgoal might be good for 
+  reminders for drinking water / custom movement reminders with a 'dont ask again until x' might be neat
+  think about implementing a unified timeline to allow for multiple alarms, events, calendar syncing etc
+    -> a separate website for that might be a good idea
+  think about fitness / health oriented features
+  calendar integration (i think this is upcoming as a platform feature...)
+  in addition to sunrise, lunch time, and sunset images would be cool as options
+    -> have option to display at the appropriate times of the day?
   look at other UI patterns that could be useful for the fitbit
+  
 */
 class DayMaker extends Application {
     default = new UserInterface()
@@ -29,6 +54,7 @@ class DayMaker extends Application {
     activeminutes = new ActiveMinutesUI()
     batterylevel = new BatteryLevelUI()
     timeoutId = null
+    screenIndex = 0
     
     // Called once on application's start...
     onMount(){
@@ -36,8 +62,10 @@ class DayMaker extends Application {
         // Same as Application.switchTo( 'screen1' ), which might be used to switch screen from anywhere.
         //note that one consequence of accessor usage is that if you need access to this.screen during the render
         // call it won't be the currently set value, so use screens[0] instead
+        this.screens = [this.default, this.steps, this.calories, this.floors, this.activeminutes]
         this.screen = this.default
-        this.screens = [this.default, this.activeminutes, this.floors, this.calories, this.steps]
+        this.screenIndex = 0
+      
         this.handlePowerLevel()
           
         document.getElementById("boundingbox").onmouseup = this.onmouseup.bind(this)
@@ -45,7 +73,7 @@ class DayMaker extends Application {
 
     handlePowerLevel() {
       if (this.default.alarm.showBatteryLevel && this.screens.indexOf(this.batterylevel) === -1) {
-        this.screens.splice(this.screens.indexOf(this.default)+1, 0, this.batterylevel)
+        this.screens.push(this.batterylevel)
       } else if (!this.default.alarm.showBatteryLevel && this.screens.indexOf(this.batterylevel) > -1) {
         this.screens.splice(this.screens.indexOf(this.batterylevel), 1)
       }
@@ -53,16 +81,16 @@ class DayMaker extends Application {
 
     // Event handler, must be pinned down to the class to preserve `this`.
     onmouseup({ key }) {
-      this.screens.unshift(this.screens.pop())
-      Application.switchTo(this.screens[0].name)
-      console.log('switching: ' + this.screens[0].name)
+      this.screenIndex = (this.screenIndex + 1) % this.screens.length
+      Application.switchTo(this.screens[this.screenIndex].name)
+      console.log('switching: ' + this.screens[this.screenIndex].name)
       if (this.timeoutId) clearTimeout(this.timeoutId)
       this.timeoutId = setTimeout(this.switchBackToDefault.bind(this), 5000)
     }
 
     onRender() {
       super.onRender()
-      
+
       if (this.default.alarm.withinLogoRange() && this.previousFrame === undefined && !this.default.alarm.showSunrise()) {
         this.animateLogo(Math.random() > 0.5 ? "left" : "right") 
       }
@@ -118,9 +146,24 @@ class DayMaker extends Application {
     }
 
     switchBackToDefault() {
-      this.screens.splice(this.screens.indexOf(this.default), 1)
-      this.screens.unshift(this.default)
       DayMaker.switchTo('default')
+      this.screenIndex = 0
+    }
+
+    onStart() {
+      //we just want to iterate through a list,
+      // and set a timeout to call the next item
+      // on the completion of the current timeout
+      let sequence = (list, foreach) => {
+        list.forEach((item, i) => {
+          setTimeout(() => {
+            foreach(item);
+          }, 1000 * i+1)
+        })
+      }
+      
+      sequence(this.screens, screen => this.screen = screen)
+      setTimeout(() => this.screen = this.default, (this.screens.length+1) * 1000)
     }
 }
 
