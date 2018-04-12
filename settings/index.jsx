@@ -1,6 +1,8 @@
 import * as util from "../common/utils";
+let propsForReset
 
 function mySettings(props) {
+  propsForReset = props
   return (
     <Page>
       <Section
@@ -58,7 +60,7 @@ function mySettings(props) {
           settingsKey="adjustBrightness"
         />
         <Text>
-          Changes font / bar colors to be easier on the eyes.
+          Changes font / bar colors to be easier on the eyes at night.
         </Text>
         
         <Toggle
@@ -67,7 +69,7 @@ function mySettings(props) {
           />
         
         <TextInput
-          label="Bedtime"
+          label="Bedtime (24 hour format)"
           settingsKey="bedtime"
           type="number"
           placeholder="22"
@@ -91,4 +93,10 @@ function mySettings(props) {
   );
 }
 
-registerSettingsPage(mySettings);
+try {
+  registerSettingsPage(mySettings); 
+} catch (e) {
+  console.log('reset settings because incompatible settings existed pre-update (nonupgradeable)')
+  propsForReset.settingsStorage.clear()
+  registerSettingsPage(mySettings); 
+}

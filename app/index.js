@@ -4,20 +4,13 @@ import { preferences } from "user-settings";
 import * as util from "../common/utils";
 import { Alarm } from "../common/alarm";
 import * as messaging from "messaging";
-import { today } from "user-activity"
-import { vibration } from "haptics"
-import { Application } from '../common/view'
-import { UserInterface } from './ui'
-import { StepsUI } from './views/steps'
-import { CaloriesUI } from './views/calories'
-import { FloorsUI } from './views/floors'
-import { ActiveMinutesUI } from './views/activeminutes'
-import { BatteryLevelUI } from './views/batterylevel'
+import { DayMaker } from "./daymaker"
 
 /**
 goal: this watchface should help you go about your day
 
 investigate: see if there's any lightweight ml for identifying common areas
+- even without ml meal time reminders might help some people
   -> see if we could use this to let us do interesting / helpful things like:
     "hey you've been on the computer for 2 hours, think about taking a break!" if we can detect keyboard accelerometer
     might need a training mode? could be better just to detect lack of steps
@@ -25,147 +18,48 @@ investigate: see if there's any lightweight ml for identifying common areas
       "hey you've been at this for a whlle, maybe take a break?"
     could we identify when they're going out the door?
       - we could do a "hey dont forget your lunch etc" type thing
-      - even without ml meal time reminders might help some people
+      
+  -> could it be as simple as detecting accelerometer data without step increase? 
       
   -> identifying the days / times wearer usually takes walks?
       
   monitor battery life, see about improvements / profiling
+  -> look into mood log integration to ask "hey howre you doing?" etc
 
 ideas:
   move the DayMaker class into another file
-  get a running average battery life & display it on the battery screen?
-  on the steps screen, introduce a "x minute walk to reach step goal" based on average pace
+    -> show a "steps this hour" on the steps screen
+  add "relax & breath" reminders for high stress times in the day
+    -> could be a good use for light ML usage? Find least steps, high heart rate times
+      - remind during those?
+  add an optional sleep reminder
+  make the "sunrise" picture customizable to any url, for people who want a picture of their kid or dog or something to wake up to
   think about what activity.onreachgoal might be good for 
   reminders for drinking water / custom movement reminders with a 'dont ask again until x' might be neat
   think about implementing a unified timeline to allow for multiple alarms, events, calendar syncing etc
     -> a separate website for that might be a good idea
   think about fitness / health oriented features
-  calendar integration (i think this is upcoming as a platform feature...)
   in addition to sunrise, lunch time, and sunset images would be cool as options
     -> have option to display at the appropriate times of the day?
   look at other UI patterns that could be useful for the fitbit
+    -> how could we benefit from a pattern like react / mithril but with an immutable DOM?
+  weather features?
+    -> pull on weather and say "go outside! it's nice!" when it's above 50, sunny, and the step goal isn't reached? or something
+    -> when it's raining show tips after common meal times for NEAT exercise or something?
   
+todo
+  take changes made to view.js and make them in forked branch 
+  
+done
+  decided not to handle time format differently (given keyboard options)
+  bedtime now supports plain hours or 24:00 format
+  battery life estimates using rolling average or 4 day estimated time
+  walk number of minutes to reach step goals based on 1.4 meters per second avg pace
+  adjusted the sunrise image dimensions to the device resolution
+  decided not to truncate hours in settings (7.5:30 is a weird time to allow) //if people really want to weird and ok
+  implemented a reset for non-migrateable settings configurations
 */
-class DayMaker extends Application {
-    default = new UserInterface()
-    steps = new StepsUI()
-    calories = new CaloriesUI()
-    floors = new FloorsUI()
-    activeminutes = new ActiveMinutesUI()
-    batterylevel = new BatteryLevelUI()
-    timeoutId = null
-    screenIndex = 0
-    
-    // Called once on application's start...
-    onMount(){
-        // Set initial screen.
-        // Same as Application.switchTo( 'screen1' ), which might be used to switch screen from anywhere.
-        //note that one consequence of accessor usage is that if you need access to this.screen during the render
-        // call it won't be the currently set value, so use screens[0] instead
-        this.screens = [this.default, this.steps, this.calories, this.floors, this.activeminutes]
-        this.screen = this.default
-        this.screenIndex = 0
-      
-        this.handlePowerLevel()
-          
-        document.getElementById("boundingbox").onmouseup = this.onmouseup.bind(this)
-    }
 
-    handlePowerLevel() {
-      if (this.default.alarm.showBatteryLevel && this.screens.indexOf(this.batterylevel) === -1) {
-        this.screens.push(this.batterylevel)
-      } else if (!this.default.alarm.showBatteryLevel && this.screens.indexOf(this.batterylevel) > -1) {
-        this.screens.splice(this.screens.indexOf(this.batterylevel), 1)
-      }
-    }
-
-    // Event handler, must be pinned down to the class to preserve `this`.
-    onmouseup({ key }) {
-      this.screenIndex = (this.screenIndex + 1) % this.screens.length
-      Application.switchTo(this.screens[this.screenIndex].name)
-      console.log('switching: ' + this.screens[this.screenIndex].name)
-      if (this.timeoutId) clearTimeout(this.timeoutId)
-      this.timeoutId = setTimeout(this.switchBackToDefault.bind(this), 5000)
-    }
-
-    onRender() {
-      super.onRender()
-
-      if (this.default.alarm.withinLogoRange() && this.previousFrame === undefined && !this.default.alarm.showSunrise()) {
-        this.animateLogo(Math.random() > 0.5 ? "left" : "right") 
-      }
-    }
-
-    animateLogo(direction) {
-      this.logo = this.default.$('#lefttoright')
-      this.logo.y = 150 + (Math.random() - .5) * 50
-      this.animationDuration = 2500 + Math.random() * 7500
-      
-      if (direction === 'left') {
-        this.logo.x = 350
-        this.animateToX = -50
-        this.animateToY = 150
-      } else {
-        this.logo.x = -50
-        this.animateToX = 350
-        this.animateToY = 150
-      }
-      
-      requestAnimationFrame(this.animateLogoDirectional.bind(this, direction))
-    }
-
-    previousFrame = undefined
-    animationDuration = 5000
-    animateToX = undefined
-    animateToY = undefined
-    animationSpeed = 10
-
-    animateLogoDirectional(direction, timestamp) {
-      let delta = this.previousFrame === undefined ? delta = 16 : timestamp - this.previousFrame
-      
-      if (this.animateToX === undefined && this.animateToY === undefined) return
-      
-      if (direction === 'left') delta *= -1
-      
-      if ((direction == 'left' && this.logo.x > this.animateToX) ||
-          (direction == 'right' && this.logo.x < this.animateToX))
-        this.logo.x = this.logo.x + (delta / this.animationDuration) * 300
-      
-      this.logo.y = 150 + Math.sin(timestamp / 500) * 10
-      this.logo.style.transform = 'rotate('+timestamp % 360 + 'deg)'
-
-      if ((direction == 'left' && this.logo.x <= this.animateToX) || 
-          (direction == 'right' && this.logo.x >= this.animateToX)) {
-        this.previousFrame = undefined
-        return
-      } 
-      
-      this.previousFrame = timestamp
-      
-      requestAnimationFrame(this.animateLogoDirectional.bind(this, direction))
-    }
-
-    switchBackToDefault() {
-      DayMaker.switchTo('default')
-      this.screenIndex = 0
-    }
-
-    onStart() {
-      //we just want to iterate through a list,
-      // and set a timeout to call the next item
-      // on the completion of the current timeout
-      let sequence = (list, foreach) => {
-        list.forEach((item, i) => {
-          setTimeout(() => {
-            foreach(item);
-          }, 1000 * i+1)
-        })
-      }
-      
-      sequence(this.screens, screen => this.screen = screen)
-      setTimeout(() => this.screen = this.default, (this.screens.length+1) * 1000)
-    }
-}
 
 // Create and start the application.
 DayMaker.start();

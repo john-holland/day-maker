@@ -51,6 +51,14 @@
   text-anchor: middle;
 }
 
+
+.very-small {
+  font-size: 20;
+  fill: fb-white;
+  width: 100%;
+  text-anchor: middle;
+}
+
 .heartrate {
   fill: crimson;
 }

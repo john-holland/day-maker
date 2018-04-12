@@ -10,6 +10,7 @@
   <text id="heartRate" class="text medium heartrate" text-anchor="middle" x="70%" y="160" />
   
   <text id="message" class="text small" text-anchor="middle" x="50%" y="195" />
+  <text id="batteryestimate" class="text very-small" text-anchor="middle" x="50%" y="220" />
   
   <rect id="activeMinutesGoal" x="0%" y="95%" width="0%" height="3%" opacity="0.50" />
   <rect id="battery" x="0%" y="98%" width="0%" height="2%" />

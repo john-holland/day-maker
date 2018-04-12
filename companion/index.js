@@ -1,15 +1,18 @@
+
 /*
  * Entry point for the companion app
  */
 
 import { settingsStorage } from "settings";
 import { outbox } from "file-transfer";
+import { device } from "peer";
 
 import * as messaging from "messaging";
 
 function extractSetting(settingName, defaultValue, typeMap = val => Number(val)) {
   if (!settingsStorage.getItem(settingName)) {
-    settingsStorage.setItem(settingName, defaultValue)
+    console.log('default: ' , defaultValue)
+    settingsStorage.setItem(settingName, JSON.stringify(defaultValue))
     return defaultValue
   }
   
@@ -28,10 +31,35 @@ function mapToBoolean(val) {
 
 let shouldNotify = true
 
+function extractTime(settingName, defaultTime) {
+  let time = extractSetting(settingName, defaultTime, val => val)
+  
+  if (!time) {
+    time = defaultTime
+  } 
+  
+  if (time && time.indexOf(':') > 0) {
+    let splitTime = time.split(':')
+    return {
+      hour: Number(splitTime[0]),
+      minute: Number(splitTime[1])
+    }
+  }
+  
+  return {
+    hour: Number(time),
+    minute: 0
+  }
+}
+
 //todo update this to not send an update to the client on each setting extraction
 // just once settings are done extracting
 function getSettings() {
   shouldNotify = false
+  
+  let bedtime = extractTime('bedtime', '22:00')
+  bedtime = bedtime.hour * 60 + bedtime.minute
+  
   let settings = {
       hour: extractSetting('hour', 8),
       minute: extractSetting('minute', 30),
@@ -41,7 +69,7 @@ function getSettings() {
       showBatteryLevel: extractSetting('showBatteryLevel', true, mapToBoolean),
       adjustBrightness: extractSetting('adjustBrightness', true, mapToBoolean),
       logocounting: extractSetting('logocounting', true, mapToBoolean),
-      bedtime: extractSetting('bedtime', 22),
+      bedtime: bedtime,
       showWakeupImage: extractSetting('showWakeupImage', true, mapToBoolean),
       silentInProgress: extractSetting('silentInProgress', true, mapToBoolean)
     }
@@ -49,12 +77,15 @@ function getSettings() {
   return settings
 }
 
-const UNSPLASH_RANDOM_URL = "https://api.unsplash.com/photos/random?query=sunrise&w=348&h=250&client_id=e726195f8bf03b737757c53dde3d25fc92ebba58571c7600760102006cae3d9d"
+let width = device.modelName === 'Ionic' ? 348 : 300
+let height = device.modelName === 'Ionic' ? 250 : 300
+
+let UNSPLASH_RANDOM_URL = `https://api.unsplash.com/photos/random?query=sunrise&w=${width}&h=${height}&client_id=e726195f8bf03b737757c53dde3d25fc92ebba58571c7600760102006cae3d9d`
 
 const destFilename = 'background.jpg'
 let obtainedNewBackground = undefined
 
-let tryGetNewBackgroundImage = () => {
+let tryGetNewBackgroundImage = () => {  
   let now = new Date().getTime()
   //wait at least an hour before retrieving a new background
   if (obtainedNewBackground !== undefined && (now / 1000 / 60 - obtainedNewBackground) > 60) return
@@ -82,10 +113,16 @@ settingsStorage.onchange = function(evt) {
     return
   }
   if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
+    if (evt.key === null) return
     console.log(`Value changed: ${evt.key}: ${evt.newValue}`)
     settingsStorage.setItem(evt.key, evt.newValue)
-
-    let settings = getSettings()
+    
+    let settings
+    try {
+     settings = getSettings() 
+    } catch (e) {
+      console.log("error from getSettings", e)
+    }
     
     if (settings.showWakeupImage) tryGetNewBackgroundImage()
     
@@ -100,7 +137,13 @@ let getShowWakeupImage = () => extractSetting('showWakeupImage', true, mapToBool
 let settingsSendInterval = setInterval(function() {
   if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
     if (getShowWakeupImage()) tryGetNewBackgroundImage()
-    messaging.peerSocket.send(getSettings());
+    let settings
+    try {
+     settings = getSettings() 
+    } catch (e) {
+      console.log("error from getSettings", e)
+    }
+    messaging.peerSocket.send(settings);
     //until we, have then stop
     clearInterval(settingsSendInterval);
   }
