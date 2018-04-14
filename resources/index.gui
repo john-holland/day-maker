@@ -29,4 +29,5 @@
   <link rel="import" href="floors.gui" />
   <link rel="import" href="activeminutes.gui" />
   <link rel="import" href="batterylevel.gui" />
+  <link rel="stylesheet" href="styles.css" />
 </svg>

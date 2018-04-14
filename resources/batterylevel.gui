@@ -3,14 +3,14 @@
   <rect id="calorieGoal" x="0%" y="3%" width="0%" height="3%" opacity="0.50" />
   <rect id="floorsGoal" x="0%" y="6%" width="0%" height="3%" opacity="0.50" />
   
-  <text id="time" class="text stats" text-anchor="middle" x="50%" y="100" />
-  <text id="date" class="text medium" text-anchor="middle" x="50%" y="160" />
+  <text id="time" class="text stats" text-anchor="middle" x="50%" />
+  <text id="date" class="text medium" text-anchor="middle" x="50%" />
   
-  <text id="heartRateDate" class="text medium" text-anchor="middle" x="30%" y="160" />
-  <text id="heartRate" class="text medium heartrate" text-anchor="middle" x="70%" y="160" />
+  <text id="heartRateDate" class="text medium" text-anchor="middle" x="30%" />
+  <text id="heartRate" class="text medium heartrate" text-anchor="middle" x="70%" />
   
-  <text id="message" class="text small" text-anchor="middle" x="50%" y="195" />
-  <text id="batteryestimate" class="text very-small" text-anchor="middle" x="50%" y="220" />
+  <text id="message" class="text small" text-anchor="middle" x="50%" />
+  <textarea id="batteryestimate" class="text very-small" text-anchor="middle" width="90%" x="5%" rows="2" />
   
   <rect id="activeMinutesGoal" x="0%" y="95%" width="0%" height="3%" opacity="0.50" />
   <rect id="battery" x="0%" y="98%" width="0%" height="2%" />

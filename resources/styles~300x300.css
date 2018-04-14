@@ -19,7 +19,7 @@
 }
 
 .large {
-  font-size: 80;
+  font-size: 70;
   font-weight: bold;
   fill: mintcream;
   width: 100%;
@@ -51,7 +51,6 @@
   text-anchor: middle;
 }
 
-
 .very-small {
   font-size: 25;
   fill: fb-white;
@@ -64,33 +63,29 @@
 }
 
 #time {
-  y: 80;
+  y: 100;
 }
 
 #date {
-  y: 120;
-}
-
-#heartRateDate {
-  y: 120;
-}
-
-#heartRate {
-  y: 120;
-}
-
-#message {
   y: 160;
 }
 
+#heartRateDate {
+  y: 160;
+}
+
+#heartRate {
+  y: 160;
+}
+
+#message {
+  y: 195;
+}
+
 #batteryestimate {
-  y: 165;
+  y: 204;
 }
 
 #goalMinutes {
-  y: 165;
+  y: 204;
 }
-
-
-
-
