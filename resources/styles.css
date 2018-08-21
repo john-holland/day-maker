@@ -64,19 +64,19 @@
 }
 
 #time {
-  y: 80;
+  y: 88;
 }
 
 #date {
-  y: 120;
+  y: 127;
 }
 
 #heartRateDate {
-  y: 120;
+  y: 127;
 }
 
 #heartRate {
-  y: 120;
+  y: 127;
 }
 
 #message {
@@ -84,7 +84,7 @@
 }
 
 #batteryestimate {
-  y: 165;
+  y: 168;
 }
 
 #goalMinutes {

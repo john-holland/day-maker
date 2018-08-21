@@ -46,11 +46,42 @@ ideas:
   weather features?
     -> pull on weather and say "go outside! it's nice!" when it's above 50, sunny, and the step goal isn't reached? or something
     -> when it's raining show tips after common meal times for NEAT exercise or something?
+    
+  keep track of the events each evaluation, and present a heatmap of the user's day
+   \ -> this would show the user what they /probably/ would have been doing, vs what they did do
+   | -> offer a "review day" feature, and allow users to verify events, etc
+   
+  on the website, make an "activity composer"
+   \ -> lightweight UI for creating EventDescriptors(...)
   
 todo
-  take changes made to view.js and make them in forked branch 
+  implement server with no-sql store
+   \ -> implement todo list page with 2factor auth 
+    |-> make accessible via the settings page in fitbit app
+    \-> periodically dump logs from watch to server -> the predictor EventDescription logs
+    | \-> clean up those files
+    |-> use api requests from server to do more analysis / insights
+  train and collect for fitness should take a "duration" or something to collect data ranges other than 15 minutes
+  finish saving data for successful / selected events
+  make screen to perform manual training for each event type
+   \ -> flow: "select event to train:" *select walking* -> "select: override, add or reset" *select add*
+   \ ->       "select duration: 5, 10, 15" *selects 15* ->
+   \ ->       *process starts -> *user walks for 15 minutes with training icon arc spinning (like blood donor)*
+   \ ->       *at the end of 15 minutes, devices buzzes and training is complete, overriding default*
+    \ -> make sure to give ability to reset to default
+  once training data is available, make screen to present user with options of "were you doing: A, B, or C?"
+   \ -> should look at thresholds for fitness functions, and develop some method for "minimum acceptable fitness"
+    \ -> once I am confident in the confidence scores, we should not present "were you doing?" and instead just have a review function
+  create similar events to the existing ones but only using time, and present "should you be running?"
   
+  write tests for predictor.js and metric-collection.js
+   
 done
+  finish implementing initial pass at kalman-filter using metric collection
+   \ -> work on the passthrough / fitness function return mechanism
+    \ -> perhaps using tree regression on nested fitness functions would be good?
+     \ -> i.e. behavior trees with fitness functions (it is effectively that, should explore more if helpful)
+  take changes made to view.js and make them in forked branch 
   decided not to handle time format differently (given keyboard options)
   bedtime now supports plain hours or 24:00 format
   battery life estimates using rolling average or 4 day estimated time

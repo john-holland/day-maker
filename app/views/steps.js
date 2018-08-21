@@ -3,6 +3,7 @@ import { Alarm } from "../common/alarm"
 import * as util from "../common/utils"
 import { today as todayActivity, goals } from "user-activity"
 import { $, $at } from '../../common/view'
+import { StepGoalEstimation } from '../../common/stepgoalestimation'
 import { UserInterface } from '../ui'
 
 let document = require("document");
@@ -68,37 +69,29 @@ class StepPerHourTimer {
 export class StepsUI extends UserInterface {
   name = 'steps'
   stepPerHourTimer = null
+  stepGoalEstimation = new StepGoalEstimation()
 
   constructor() {
     super()
     this.$ = $
     this.el = this.$()
+    goals.addEventListener("reachgoal", (goal, evt) => {
+      if (goal === 'steps' && !this.stepPerHourTimer) {
+        this.stepPerHourTimer = new StepPerHourTimer()
+        this.stepPerHourTimer.start()
+      }
+    })
   }
 
 	onRender() {
     super.onRender()
     this.$("#time").text = `${todayActivity.local.steps || 0} steps`
     
-    //if they haven't hit their step goal, we want to estimate how long it will take
-    //
-    let metersPerStep = todayActivity.local.distance / (todayActivity.local.steps || 1)
-    //according to wikipedia, avg walking speed is 1.4 meters per second
-    //  soooooooo we can estimate metersPerStep by 
-    let stepsToGo = Math.max(goals.steps - (todayActivity.local.steps || 0), 0)
+    let stepsToGo = this.stepGoalEstimation.getStepsToGo()
     
     let message = 'Goal! Way to go!'
     if (stepsToGo > 0) {
-      let metersToGo = metersPerStep * stepsToGo
-      let secondsTillGoalReached = metersToGo / 1.4
-      let minuteWalk = Math.ceil(secondsTillGoalReached / 60)
-
-      let hour = Math.floor(minuteWalk / 60)
-      let minute = minuteWalk - hour * 60
-      minute = minute < 10 ? '0' + minute : minute
-      message = `walk for ${hour}:${minute} to reach your goal!`
-    } else if (!this.stepPerHourTimer || !this.stepPerHourTimer.started) {
-      this.stepPerHourTimer = new StepPerHourTimer()
-      this.stepPerHourTimer.start()
+      message = this.stepGoalEstimation.getEstimation()
     } else if (this.stepPerHourTimer && this.stepPerHourTimer.stepsSinceStartOfHour() !== undefined) {
       message = `${this.stepPerHourTimer.stepsSinceStartOfHour()} steps this hour`
     }
