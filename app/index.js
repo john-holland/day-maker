@@ -57,6 +57,7 @@ ideas:
 todo
   implement server with no-sql store
    \ -> implement todo list page with 2factor auth 
+    |-> use the events to "auto complete" todo items
     |-> make accessible via the settings page in fitbit app
     \-> periodically dump logs from watch to server -> the predictor EventDescription logs
     | \-> clean up those files
