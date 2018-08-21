@@ -6,7 +6,7 @@ import { _knn } from './fitness-functions/_knn'
 import { chiSquaredFitness } from './fitness-functions/chi-squared-test'
 import { euclideanDistance } from './fitness-functions/euclidean-distance'
 
-export class Predictor {
+export class Clairvoyance {
   constructor() {
     
   }
