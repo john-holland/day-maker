@@ -53,7 +53,7 @@ ideas:
    
   on the website, make an "activity composer"
    \ -> lightweight UI for creating EventDescriptors(...)
-   
+
 todo
   implement server with no-sql store
    \ -> implement todo list page with 2factor auth 
@@ -74,10 +74,11 @@ todo
    \ -> should look at thresholds for fitness functions, and develop some method for "minimum acceptable fitness"
     \ -> once I am confident in the confidence scores, we should not present "were you doing?" and instead just have a review function
   create similar events to the existing ones but only using time, and present "should you be running?"
-  
+
   write tests for predictor.js and metric-collection.js
    
 done
+  implement MetricHistogram for event selections
   finish implementing initial pass at kalman-filter using metric collection
    \ -> work on the passthrough / fitness function return mechanism
     \ -> perhaps using tree regression on nested fitness functions would be good?

@@ -49,11 +49,15 @@ class MetricHistogram {
     }
 
     collect() {
-        this.collection.push({ timestamp: new Date().getTime(), value: this.accessor() })
+        this.addValue(this.accessor())
 
         if (this.maxStorage > -1 && this.collection.length > this.maxStorage) {
             this.collection.shift()
         }
+    }
+    
+    addValue(value) {
+        this.collection.push({ timestamp: new Date().getTime(), value: value })
     }
 
     start() {

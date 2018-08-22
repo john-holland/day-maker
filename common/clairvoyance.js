@@ -6,6 +6,11 @@ import { _knn } from './fitness-functions/_knn'
 import { chiSquaredFitness } from './fitness-functions/chi-squared-test'
 import { euclideanDistance } from './fitness-functions/euclidean-distance'
 
+let minuteInHourHistogram = new MetricHistogram('minuteInHour', 100 * 60 * 1000)
+let hourInDayHistogram = new MetricHistogram('hourInDay', 100 * 60 * 1000)
+let hourInWeekHistogram = new MetricHistogram('hourInWeek', 100 * 60 * 1000)
+let dayInWeekHistogram = new MetricHistogram('dayInWeek', 100 * 60 * 1000)
+
 export class Clairvoyance {
   constructor() {
 
@@ -49,6 +54,24 @@ export class Clairvoyance {
       acc[metric] = METRICS[metric].getWithinDuration(e.duration)
       return acc
     }, { })
+
+    let events = _.keys(EventProvider.instance.events, p => Math.abs(hashCode(p) % 100)
+    if (_.uniq(events).length != events.length) {
+      //todo: replace this with a persistent id collection map
+      console.error('hashing function collision!')
+    }
+
+    let date = new Date()
+    let day = date.getDays()
+    let hour = date.getHours()
+    let minute = date.getMinutes()
+
+    let eventhashcode = Math.abs(hashString(event) % 100)
+    minuteInHourHistogram.addValue([minute, eventhashcode])
+    hourInDayHistogram.addValue([hour, eventhashcode])
+    hourInWeekHistogram.addValue([hour + day * 24, eventhashcode])
+    dayInWeekHistogram.addValue([day, eventhashcode])
+
     e.save()
   }
   
@@ -78,7 +101,11 @@ let METRICS = {
   incharger: incharger,
   calories: calories,
   acc: accelerometer,
-  bar: barometer
+  bar: barometer,
+  minuteInHour: minuteInHourHistogram,
+  hourInDay: hourInDayHistogram,
+  hourInWeek: hourInWeekHistogram,
+  dayInWeek: dayInWeekHistogram
 }
 
 /**
@@ -260,6 +287,15 @@ const TEN_MINUTES = ONE_MINUTE * 10
 const FIFTEEN_MINUTES = ONE_MINUTE * 15
 const HALF_HOUR = ONE_MINUTE * 30
 
+function hashString(str){
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash += Math.pow(str.charCodeAt(i) * 31, str.length - i)
+    hash = hash & hash // Convert to 32bit integer
+  }
+  return hash
+}
+
 /**
   set up a scheduler, to make checkpoints
 */
@@ -289,10 +325,10 @@ class EventProvider {
   initializeEvents() {
     //if the arguments
     // EventDescriptor('name', ...'fitness function metric default to standard deviation' or { 'metric': 'fitness function, can recurse' })
-    this.events.coffee = new EventDescriptor('coffee', TEN_MINUTES, knn('time'), knn(normalize('steps')), event('eating'))
-    this.events.wakeup = new EventDescriptor('wakeup', FIFTEEN_MINUTES, knn('time'), 'steps', 'acc')
-    this.events.gotosleep = new EventDescriptor('gotosleep', HALF_HOUR, knn('time'), 'steps', 'acc')
-    this.events.onbus = new EventDescriptor('onbus', FIFTEEN_MINUTES, 'steps', knn('time'), chisquared(kalmanfilter('acc')))
+    this.events.coffee = new EventDescriptor('coffee', TEN_MINUTES, knn('hourInDay'), knn(normalize('steps')), event('eating'))
+    this.events.wakeup = new EventDescriptor('wakeup', FIFTEEN_MINUTES, knn('hourInDay'), 'steps', 'acc')
+    this.events.gotosleep = new EventDescriptor('gotosleep', HALF_HOUR, knn('hourInDay'), 'steps', 'acc')
+    this.events.onbus = new EventDescriptor('onbus', FIFTEEN_MINUTES, 'steps', knn('minuteInHour'), knn('hourInDay'), chisquared(kalmanfilter('acc')))
       //linearregress_signwave -> maybe use kalman filter to remove constant bus jitter?
       // could maybe also make something to count 'stops'
       // could compare noiseness from kalman filter?
@@ -300,8 +336,8 @@ class EventProvider {
     this.events.bike = new EventDescriptor('bike', TEN_MINUTES, 'steps', 'acc', 'hr')
     this.events.eating = new EventDescriptor('eating', TEN_MINUTES, 'steps', 'acc', 'bar', 'hr')
     this.events.breakfast = new EventDescriptor('breakfast', TEN_MINUTES, event('eating'))
-    this.events.lunch = new EventDescriptor('lunch', TEN_MINUTES, 'time', event('eating')) //knearestneighbors_linear -> thinking mostly matching on curves, then knearest or something
-    this.events.dinner = new EventDescriptor('dinner', TEN_MINUTES, 'time', event('eating'))
+    this.events.lunch = new EventDescriptor('lunch', TEN_MINUTES, 'hourInDay', event('eating')) //knearestneighbors_linear -> thinking mostly matching on curves, then knearest or something
+    this.events.dinner = new EventDescriptor('dinner', TEN_MINUTES, 'hourInDay', event('eating'))
     this.events.sex = new EventDescriptor('sex', FIFTEEN_MINUTES, 'steps', 'hr', jerky('acc'))
     this.events.walking = new EventDescriptor('walking', TEN_MINUTES, 'steps', 'elevation', 'hr')
     this.events.running = new EventDescriptor('running', FIVE_MINUTES, 'steps', 'elevation', chisquared('hr'), 'hr')

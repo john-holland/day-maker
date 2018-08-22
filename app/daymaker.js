@@ -14,6 +14,8 @@ import { FloorsUI } from './views/floors'
 import { ActiveMinutesUI } from './views/activeminutes'
 import { BatteryLevelUI } from './views/batterylevel'
 
+import { Clairvoyance } from '../common/clairvoyance'
+
 export class DayMaker extends Application {
     default = new UserInterface()
     steps = new StepsUI()
@@ -23,7 +25,9 @@ export class DayMaker extends Application {
     batterylevel = new BatteryLevelUI()
     timeoutId = null
     screenIndex = 0
-    
+    clairvoyance = new Clairvoyance()
+    likelyEventsIntervalId = undefined
+
     // Called once on application's start...
     onMount(){
         // Set initial screen.
@@ -34,9 +38,26 @@ export class DayMaker extends Application {
         this.screen = this.default
         this.screenIndex = 0
       
+        this.clairvoyance.initialize()
+        this.clairvoyance.startMetricCollection()
+        this.likelyEventsIntervalId = setInterval(this.metricCollectionInterval.bind(this), 15*60*1000)
+
         this.handlePowerLevel()
           
         document.getElementById("boundingbox").onmouseup = this.onmouseup.bind(this)
+    }
+
+    metricCollectionInterval() {
+      //todo: show screen with events
+      let events = this.clairvoyance.getLikelyEvents(5, dataEvalCount = 3)
+      
+      // show screen, preferably modal? maybe use views.subview?
+      // for future: if we have a todo list item that is the same event type as any of the likely events
+      //  or possibly as the highest likelyhood event, then mark it complete, showing a one touch, dismissable screen
+      //  saying as much.
+      
+      //todo: once the user has picked event, call selectionMade
+      //this.clairvoyance.selectionMade(selectedEvent)
     }
 
     handlePowerLevel() {
