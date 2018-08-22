@@ -74,13 +74,27 @@ class MetricHistogram {
       let fifteenAfter = date + FIFTEEN_MINUTES_MIILLESONDS
       return this.collection.filter(d => d.timestamp >= fifteenBefore && d.timestamp <= fifteenAfter).map(d => d.value)
     }
+
+    /**
+        returns the metric collection histogram within the specified duration.
+        for note, the duration is on either side of the date
+
+        @return metric histogram
+     */
+    getWithinDuration(date, duration) {
+      const FIFTEEN_MINUTES_MIILLESONDS = 15 * 60 * 1000
+      
+      let fifteenBefore = date - duration
+      let fifteenAfter = date + duration
+      return this.collection.filter(d => d.timestamp >= fifteenBefore && d.timestamp <= fifteenAfter).map(d => d.value)
+    }
 }
 
 import { today, goals } from "user-activity"
-import { battery, charger } from "power";
-import { HeartRateSensor } from "heart-rate";
-import { Barometer } from "barometer";
-import { Gyroscope } from "gyroscope";
+import { battery, charger } from "power"
+import { HeartRateSensor } from "heart-rate"
+import { Barometer } from "barometer"
+import { Gyroscope } from "gyroscope"
 
 // Create a new instance of the Gyroscope object
   let data = {
@@ -96,16 +110,16 @@ import { Gyroscope } from "gyroscope";
 document.onclick = function(evt) {
   console.log('on click')
 }
-gyro.start();
-bar.start();
-hrm.start();
+gyro.start()
+bar.start()
+hrm.start()
 const ONE_MINUTE = 60 * 1000
 const FIVE_MINUTES = 5 * ONE_MINUTE
 const TEN_MINUTES = 10 * ONE_MINUTE
 
 let heartRateMonitor = new HeartRateSensor()
-let gyro = new Gyroscope({ frequency: 10 });
-let bar = new Barometer();
+let gyro = new Gyroscope({ frequency: 10 })
+let bar = new Barometer()
 
 let accelerometer = new MetricHistogram('accelerometer', ONE_SECOND, () => { return [gyro.x.toFixed(3), gyro.y.toFixed(3), gyro.z.toFixed(3)] }, () => gyro.start(), () => gyro.stop())
 let barometer = new MetricHistogram('barometer', ONE_SECOND, () => bar.pressure ? parseInt(bar.pressure) : 0, () => bar.start(), () => bar.stop())
@@ -116,6 +130,6 @@ let power = new MetricHistogram('power', FIVE_MINUTES, () => battery.chargeLevel
 let incharger = new MetricHistogram('incharger', TEN_MINUTES, () => charger.connected ? 1 : 0)
 let calories = new MetricHistogram('calories', FIVE_MINUTES, () => today.local.calories)
 
-scheduler.available.concat([steps, elevation, heartRateMonitor, hr, power, incharger, calories])
+scheduler.available.concat([steps, elevation, heartRateMonitor, hr, power, incharger, calories, accelerometer, barometer])
 
-export { scheduler, steps, elevation, heartRateMonitor, hr, power, incharger, calories }
+export { scheduler, steps, elevation, heartRateMonitor, hr, power, incharger, calories, accelerometer, barometer, MetricHistogram }

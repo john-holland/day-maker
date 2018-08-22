@@ -53,7 +53,7 @@ ideas:
    
   on the website, make an "activity composer"
    \ -> lightweight UI for creating EventDescriptors(...)
-  
+   
 todo
   implement server with no-sql store
    \ -> implement todo list page with 2factor auth 
