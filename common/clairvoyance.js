@@ -127,26 +127,36 @@ class EventDescription {
     this.assembleFitness(this.fitness)
   }
 
-  getMetric(name, training) {
-    let data = METRICS[name].getWithinDuration(date, this.duration)
+  cache = {}
+  getCacheMetric(name, date) {
+    let key = name+date
+    if (!(key in cache)) {
+      cache[key] = METRICS[name].getWithinDuration(date, this.duration)
+    }
+
+    return cache[key]
+  }
+  getMetric(name, training, date) {
+    let data = getCacheMetric(name, date)
+
     if (typeof name == 'string') {
-      return (date, accfitness) => FITNESS_FUNCTIONS['standarddev'](data, accfitness, this.training[name])
+      return (accfitness) => FITNESS_FUNCTIONS['standarddev'](data, accfitness, training[name])
     } else if (typeof name == 'object' && length in name && name.length >= 2) { //lazy array check
       if (name[1] == 'event') {
-        return (date, accfitness) => EventProvider.instance.events[name[0]].getFitness(data, accfitness, this.training[name[0]])
+        return (accfitness) => EventProvider.instance.events[name[0]].getFitness(data, accfitness, training[name[0]])
       }
 
       let [metric, fitnessfn, ...restfns] = name
       
       if (restfns.length === 0) {
-        return (date, accfitness) => this.getMetric(metric)(data, accfitness, this.training[name])
+        return (accfitness) => this.getMetric(metric, training, date)(data, accfitness, training[name])
       } else {
         //if the builder is not an event
         // call name[1..n] recursively, left to right
-        return (date, accfitness) => {
+        return (accfitness) => {
           //newData will be the same unless modified by a fitness function
-          let [newData, newFitness] = this.getMetric(metric)(data, accfitness, this.training[name])
-          return this.getMetric([metric, ...restfns])(newData, newFitness, this.training[name])
+          let [newData, newFitness] = this.getMetric(metric, training, date)(data, accfitness, training[name])
+          return this.getMetric([metric, ...restfns])(newData, newFitness, training[name])
         }
       }
     }
@@ -155,7 +165,11 @@ class EventDescription {
     return (date, accfitness) => [[], accfitness, []]
   }
 
+  clearCache() {
+    this.cache = {}
+  }
   getFitness(date, accfitness, dataEvalCount = -1) {
+    clearCache()
     let datas = [this.training, ...(dataEvalCount < 0 ? this.data : _.first(this.data, dataEvalCount))]
 
     //if we end up normalizing the fitness value returned by getFitness,
@@ -261,7 +275,8 @@ const FITNESS_FUNCTIONS = {
   'knn': (data, fitness, training) => [data, _knn(training, data)],
   'chisquared': (data, fitness, training) => [data, chiSquaredFitness(data, training)],
   'normalize': (data, fitness, training) => [_normalize(data), fitness],
-  'jerky':  (data, fitness, training) => [data, _knn(normalize(training), normalize(data))]
+  'jerky':  (data, fitness, training) => [data, _knn(normalize(training), normalize(data))],
+  'fitness': (data, fitness, training) => [fitness, fitness] //maybe useless? maybe not!
 }
 
 function ftfn(fitnessfn) {
@@ -302,17 +317,6 @@ function hashString(str){
 class EventProvider {
   events = {}
 
-  //movie with ar integration, where you need to download an app and you see different stuff compared to other people
-  // you could also have messages or instructions to hold the phone up in front of the person behind you
-  // you could have people register based on the day etc, and make it a "session", good for spy movies or action movies
-  // the writing would have to be good enough to accomidate audience interaction
-  //  i.e. it would give well to something with a super complicated plot (see: Primer), where the ending and results are certain, but the way they got that way
-  //  is less than obvious, and could be figured out by app integration
-
-  // you could also just do a bunch of hokay shit with disney movies etc, make so much money, so much
-  // /premium movie features/ -> //!movie dlc!// -> sort of bleh but idk people would like it probably
-  // plus the nice thing about dlc is you do not need to download it!
-  // so weird!
   constructor() {
     
   }
@@ -322,6 +326,9 @@ class EventProvider {
       return EventProvider._instance
   }
 
+  //linearregress_signwave -> maybe use kalman filter to remove constant bus jitter?
+  // could maybe also make something to count 'stops'
+  // could compare noiseness from kalman filter?
   initializeEvents() {
     //if the arguments
     // EventDescriptor('name', ...'fitness function metric default to standard deviation' or { 'metric': 'fitness function, can recurse' })
@@ -329,9 +336,6 @@ class EventProvider {
     this.events.wakeup = new EventDescriptor('wakeup', FIFTEEN_MINUTES, knn('hourInDay'), 'steps', 'acc')
     this.events.gotosleep = new EventDescriptor('gotosleep', HALF_HOUR, knn('hourInDay'), 'steps', 'acc')
     this.events.onbus = new EventDescriptor('onbus', FIFTEEN_MINUTES, 'steps', knn('minuteInHour'), knn('hourInDay'), chisquared(kalmanfilter('acc')))
-      //linearregress_signwave -> maybe use kalman filter to remove constant bus jitter?
-      // could maybe also make something to count 'stops'
-      // could compare noiseness from kalman filter?
     this.events.drive = new EventDescriptor('drive', FIVE_MINUTES, 'steps', swaying(kalmanfilter('acc')))// { 'acc': { 'swaying': 'kalmanfilter' }}, { 'swaying': { 'kalmanfilter': 'acc' }})
     this.events.bike = new EventDescriptor('bike', TEN_MINUTES, 'steps', 'acc', 'hr')
     this.events.eating = new EventDescriptor('eating', TEN_MINUTES, 'steps', 'acc', 'bar', 'hr')
@@ -345,6 +349,7 @@ class EventProvider {
     this.events.videogames = new EventDescriptor('videogames', HALF_HOUR, 'steps', 'acc', 'hr')
     this.events.writing = new EventDescriptor('writing', FIVE_MINUTES, jerky('acc'), 'steps')
     this.events.typing = new EventDescriptor('typing', FIVE_MINUTES, jerky('acc'), 'steps', 'bar')
+    this.events.charging = new EventDescriptor('charging', HALF_HOUR, knn('incharger'))
   }
 
   getEvents(date) {
@@ -356,7 +361,7 @@ class EventProvider {
     @return returns events sorted by their fitness score, in the form [eventname, fitness]    
    */
   getSortedByFitness(date, dataEvalCount) {
-    return _.sortby(_.pairs(this.events).map(e => [e[0], e[1].getFitness(date, 1, dataEvalCount)]), e => e[1])
+    return _.sortBy(_.pairs(this.events).map(e => [e[0], e[1].getFitness(date, 1, dataEvalCount)]), e => e[1])
   }
 
   getEvents(name) {

@@ -36,9 +36,30 @@ export {
       // { centroid: [-9.5, 10.5], points: [[-10, 10], [-9, 11]] },
       // { centroid: [0.3333333333333333, 0.3333333333333333], points: [[1, 0], [0, 1], [0, 0]] }
 
+      let cache = {}
+
+      let getCache = (dc, tc) {
+        let [dx, dy] = dc
+        let [tx, ty] = tc
+        let key = `${dx}${dy}${tx}${ty}`
+        return cache[key]
+      }
+
       //maybe optimize
-      let maxDistance = _.max(dataCentroids, dc => _.max(trainingCentroids, tc => euclideanDistance(dc.centroid, tc.centroid)))
-      let fitness = _.sum(dataCentroids.map(dc => 1 - _.min(trainingCentroids, tc => euclideanDistance(dc.centroid, tc.centroid)) / maxDistance)) / centroid_count
+      let maxDistance = _.max(dataCentroids, dc => _.max(trainingCentroids, tc => {
+        let [dx, dy] = dc.centroid
+        let [tx, ty] = tc.centroid
+        let key = `${dx}${dy}${tx}${ty}`
+
+        if (!(key in cache)) {
+          cache[key] = euclideanDistance(dc.centroid, tc.centroid)
+        }
+        return cache[key]
+      }))
+
+      // inverse to the average distance of each centroid to it's closest training set neighbor
+      let fitness = _.sum(dataCentroids.map(dc => 1 - _.min(trainingCentroids, tc => getCache(dc.centroid, tc.centroid)) / maxDistance)) / centroid_count
+      
       return fitness
   }
 }

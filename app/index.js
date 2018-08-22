@@ -74,8 +74,10 @@ todo
    \ -> should look at thresholds for fitness functions, and develop some method for "minimum acceptable fitness"
     \ -> once I am confident in the confidence scores, we should not present "were you doing?" and instead just have a review function
   create similar events to the existing ones but only using time, and present "should you be running?"
-
+  persistence for metric-collection.js
+   \ -> how often to persist? every hour?
   write tests for predictor.js and metric-collection.js
+
    
 done
   implement MetricHistogram for event selections
