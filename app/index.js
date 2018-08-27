@@ -53,36 +53,60 @@ ideas:
    
   on the website, make an "activity composer"
    \ -> lightweight UI for creating EventDescriptors(...)
+   
+   epic generator -> create multi person stories
+    -> something like an anonymous mmo
+    -> small party or town interactions, 
+      "group similar lifestyles, provide prompts upon todo completion"
+      allow leaving groups
+    -> animal crossing sim?
+      -> group people with similar lifestyles
+      -> once a person is within coefficient of similarity, create house
+      -> businesses created should allow for 
+      
+   dnd generator -> create campaign based loosely around the todo list
+      -> predicted schedule as random encounters
+      -> queue of encounters should present to user when they look, not intrusive
+      -> separate app? website? settings page game lol?
+      
+      
+   should look at thresholds for fitness functions, and develop some method for "minimum acceptable fitness"
+    \ -> once I am confident in the confidence scores, we should not present "were you doing?" and instead just have a review function
 
 todo
-  implement server with no-sql store
-   \ -> implement todo list page with 2factor auth 
+  user aws lambda to interact with dynamo
+   \ -> implement todo list page with 2factor auth
     |-> use the events to "auto complete" todo items
     |-> make accessible via the settings page in fitbit app
     \-> periodically dump logs from watch to server -> the predictor EventDescription logs
-    | \-> clean up those files
-    |-> use api requests from server to do more analysis / insights
-  train and collect for fitness should take a "duration" or something to collect data ranges other than 15 minutes
+     | -> clean up those files
+     \ -> use api requests from server to do more analysis / insights
+
   finish saving data for successful / selected events
-  make screen to perform manual training for each event type
-   \ -> flow: "select event to train:" *select walking* -> "select: override, add or reset" *select add*
-   \ ->       "select duration: 5, 10, 15" *selects 15* ->
-   \ ->       *process starts -> *user walks for 15 minutes with training icon arc spinning (like blood donor)*
-   \ ->       *at the end of 15 minutes, devices buzzes and training is complete, overriding default*
-    \ -> make sure to give ability to reset to default
-  once training data is available, make screen to present user with options of "were you doing: A, B, or C?"
-   \ -> should look at thresholds for fitness functions, and develop some method for "minimum acceptable fitness"
-    \ -> once I am confident in the confidence scores, we should not present "were you doing?" and instead just have a review function
+   | -> store public id of the user in nosql but do not use for generic insights
+   \ -> create polling event to copy over to companion and off to server
+    | -> store last sent timestamp and just send training data with timestamps after that
+    \ -> provide ack for last sent, then update alarm settings and save.
+  
+  abstract settings out of the alarm class
+  
+  make sure to give ability to reset to default training once I have that data in there
+  
   create similar events to the existing ones but only using time, and present "should you be running?"
-  persistence for metric-collection.js
-   \ -> how often to persist? every hour?
+  the onmouseup event might need to be tweaked
   write tests for predictor.js and metric-collection.js
 
-   
 done
+  once training data is available, make screen to present user with options of "were you doing: A, B, or C?"
+  make screen to perform manual training for each event type
+     | -> flow: "select event to train:" *select walking* -> "select: override, add or reset" *select add*
+     | ->       "select duration: 5, 10, 15" *selects 15* ->
+     | ->       *process starts -> *user walks for 15 minutes with training icon arc spinning (like blood donor)*
+     \ ->       *at the end of 15 minutes, devices buzzes and training is complete, overriding default*
+  train and collect for fitness should take a "duration" or something to collect data ranges other than 15 minutes
   implement MetricHistogram for event selections
   finish implementing initial pass at kalman-filter using metric collection
-   \ -> work on the passthrough / fitness function return mechanism
+   | -> work on the passthrough / fitness function return mechanism
     \ -> perhaps using tree regression on nested fitness functions would be good?
      \ -> i.e. behavior trees with fitness functions (it is effectively that, should explore more if helpful)
   take changes made to view.js and make them in forked branch 

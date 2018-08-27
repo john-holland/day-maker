@@ -1,4 +1,8 @@
 <svg id="boundingbox">
+  <defs>
+    <link rel="import" href="meter_widget.gui" />
+  </defs>
+  
   <svg id="default">
 
     <image id="backgroundimage" width="100%" height="100%" opacity="0" href="/private/data/background.jpg" load="sync" x="0" y="0" />
@@ -23,6 +27,17 @@
 
     <image id="righttoleft" href="Fitbit_app_icon.png" load="sync" x="120%" y="30%" height="50" width="50" opacity="0.5" />   
     
+
+    <use id="training-meter" href="#meter-blue-icon" x="100%-80" y="0">
+      <!-- <set href="#arc" attributeName="sweep-angle" to="290" /> -->
+      <set href="#image" attributeName="href" to="img/timer.png" />
+    </use>
+
+    <use id="btn-settings" href="#combo-button-upper-left" fill="fb-cyan">
+      <set href="combo-button-icon" attributeName="href" to="img/cog.png"/>
+      <set href="combo-button-icon-press" attributeName="href" to="img/cog_press.png"/>
+    </use>
+    
   </svg>
   
   <link rel="import" href="steps.gui" />
@@ -30,5 +45,8 @@
   <link rel="import" href="floors.gui" />
   <link rel="import" href="activeminutes.gui" />
   <link rel="import" href="batterylevel.gui" />
+  <link rel="import" href="event-confirmation.gui" />
+  <link rel="import" href="training.gui" />
+  <link rel="import" href="settings.gui" />
   <link rel="stylesheet" href="styles.css" />
 </svg>

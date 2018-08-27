@@ -1,0 +1,109 @@
+<svg id="training">
+  <symbol id="tile-event" href="#tile-list-item" focusable="false" pointer-events="visible" system-events="all">
+    <text id="text" />
+    <rect id="tile-divider-bottom" class="tile-divider-bottom" />
+    <rect id="touch-me" pointer-events="all" x="0" y="0" width="100%" height="100%-2" />
+  </symbol>
+
+  <symbol id="tile-event-no-match" href="#tile-list-item-no-match" focusable="false" pointer-events="visible" system-events="all">
+    <text id="text">no match</text>
+    <rect id="tile-divider-bottom" class="tile-divider-bottom" />
+    <rect id="touch-me" pointer-events="all" x="0" y="0" width="100%" height="100%-2" />
+  </symbol>
+  
+  <use id="trainingaction" href="#tile-list" height="100%" width="100%">
+    <var id="reorder-enabled" value="0"/>
+    <var id="separator-height-bottom" value="2"/>
+
+    <use id="event-0" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-1" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-2" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+  </use>
+  
+  <use id="trainingduration" href="#tile-list" height="100%" width="100%">
+    <var id="reorder-enabled" value="0"/>
+    <var id="separator-height-bottom" value="2"/>
+
+    <use id="event-0" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-1" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-2" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+  </use>
+    
+  <use id="eventList" href="#tile-list" height="100%" width="100%">
+    <var id="reorder-enabled" value="0"/>
+    <var id="separator-height-bottom" value="2"/>
+
+    <use id="event-0" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-1" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-2" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-3" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-4" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-5" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-6" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-7" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-8" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-9" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-10" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-11" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-12" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-13" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-14" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-15" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-16" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-17" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-18" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+    <use id="event-19" href="#tile-list-item" class="item">
+      <use href="#tile-event" />
+    </use>
+  </use>
+</svg>

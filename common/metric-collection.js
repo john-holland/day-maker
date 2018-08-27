@@ -136,4 +136,4 @@ let calories = new MetricHistogram('calories', FIVE_MINUTES, () => today.local.c
 
 scheduler.available.concat([steps, elevation, heartRateMonitor, hr, power, incharger, calories, accelerometer, barometer])
 
-export { scheduler, MetricHistogram, steps, elevation, heartRateMonitor, hr, power, incharger, calories, accelerometer, barometer }
+export { scheduler, steps, elevation, heartRateMonitor, hr, power, incharger, calories, accelerometer, barometer, MetricHistogram }

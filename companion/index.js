@@ -66,6 +66,7 @@ function getSettings() {
       steps: extractSetting('steps', 50),
       showHeartRate: extractSetting('showheartrate', true, mapToBoolean),
       disableAlarm: extractSetting('disableAlarm', false, mapToBoolean),
+      alarmEnabled: extractSetting('alarmEnabled', true, mapToBoolean),
       showBatteryLevel: extractSetting('showBatteryLevel', true, mapToBoolean),
       adjustBrightness: extractSetting('adjustBrightness', true, mapToBoolean),
       logocounting: extractSetting('logocounting', true, mapToBoolean),
