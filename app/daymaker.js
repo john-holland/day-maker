@@ -45,9 +45,15 @@ export class DayMaker extends Application {
         this.settings = new SettingsUI(this)
         this.training = new TrainingUI(this)
         document.getElementById("settings-btn").onclick => this.switchTo('settings')
-      
+
+        this.clairvoyance.initialize()
+        this.clairvoyance.startMetricCollection()
+        this.likelyEventsIntervalId = setInterval(this.metricCollectionInterval.bind(this), 15*60*1000)
+
+        this.setInterval(this.clairvoyance.saveEvents.bind(this.clairvoyance), 60*60*1000)
+
         this.handlePowerLevel()
-          
+
         document.getElementById("boundingbox").onmouseup = this.onmouseup.bind(this)
     }
 

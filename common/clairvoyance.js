@@ -274,7 +274,9 @@ const FITNESS_FUNCTIONS = {
   'knn': (data, fitness, training) => [data, _knn(training, data)],
   'chisquared': (data, fitness, training) => [data, chiSquaredFitness(data, training)],
   'normalize': (data, fitness, training) => [_normalize(data), fitness],
-  'jerky':  (data, fitness, training) => [data, _knn(normalize(training), normalize(data))]
+  'jerky':  (data, fitness, training) => [data, _knn(normalize(training), normalize(data))],
+  'fitness': (data, fitness, training) => [fitness, fitness], //maybe useless? maybe not!
+  'inversefitness': (data, fitness, training) => [data, 1 - fitness]
 }
 
 function ftfn(fitnessfn) {
@@ -342,10 +344,7 @@ class EventProvider {
     this.events.wakeup = new EventDescriptor('wakeup', FIFTEEN_MINUTES, knn('hourInDay'), 'steps', 'acc')
     this.events.gotosleep = new EventDescriptor('gotosleep', HALF_HOUR, knn('hourInDay'), 'steps', 'acc')
     this.events.onbus = new EventDescriptor('onbus', FIFTEEN_MINUTES, 'steps', knn('minuteInHour'), knn('hourInDay'), chisquared(kalmanfilter('acc')))
-      //linearregress_signwave -> maybe use kalman filter to remove constant bus jitter?
-      // could maybe also make something to count 'stops'
-      // could compare noiseness from kalman filter?
-    this.events.drive = new EventDescriptor('drive', FIVE_MINUTES, 'steps', swaying(kalmanfilter('acc')))// { 'acc': { 'swaying': 'kalmanfilter' }}, { 'swaying': { 'kalmanfilter': 'acc' }})
+    this.events.driving = new EventDescriptor('driving', FIVE_MINUTES, 'steps', swaying(kalmanfilter('acc')))
     this.events.bike = new EventDescriptor('bike', TEN_MINUTES, 'steps', 'acc', 'hr')
     this.events.eating = new EventDescriptor('eating', TEN_MINUTES, 'steps', 'acc', 'bar', 'hr')
     this.events.breakfast = new EventDescriptor('breakfast', TEN_MINUTES, event('eating'))
@@ -358,6 +357,9 @@ class EventProvider {
     this.events.videogames = new EventDescriptor('videogames', HALF_HOUR, 'steps', 'acc', 'hr')
     this.events.writing = new EventDescriptor('writing', FIVE_MINUTES, jerky('acc'), 'steps')
     this.events.typing = new EventDescriptor('typing', FIVE_MINUTES, jerky('acc'), 'steps', 'bar')
+    this.events.charging = new EventDescriptor('charging', HALF_HOUR, knn('incharger'))
+    //uh inversefitness will likely require training for the negation of the events
+    this.events.notdriving = new EventDescriptor('notdriving', THIRTY_SECONDS, inversefitness(swaying(kalmanfilter('acc'))))
   }
 
   getEvents(date) {
