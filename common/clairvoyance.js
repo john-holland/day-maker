@@ -5,13 +5,22 @@ import { _ } from './underscore'
 import { _knn } from './fitness-functions/_knn'
 import { chiSquaredFitness } from './fitness-functions/chi-squared-test'
 import { euclideanDistance } from './fitness-functions/euclidean-distance'
+import * as messaging from "messaging";
+import { peerSocket } from "messaging";
+import { PeerMessageQueue } from "./peermessagequeue"
+
+let messagequeue = new PeerMessageQueue()
 
 let minuteInHourHistogram = new MetricHistogram('minuteInHour', 100 * 60 * 1000)
 let hourInDayHistogram = new MetricHistogram('hourInDay', 100 * 60 * 1000)
 let hourInWeekHistogram = new MetricHistogram('hourInWeek', 100 * 60 * 1000)
 let dayInWeekHistogram = new MetricHistogram('dayInWeek', 100 * 60 * 1000)
 
+const EVENT_COMPANION_SEND_INTERVAL = 60 * 60 * 1000
+
 export class Clairvoyance {
+  eventCompanionSaveIntervalId = undefined
+  
   constructor() {
 
   }
@@ -85,6 +94,7 @@ export class Clairvoyance {
     }, { })
     
     e.save()
+    this.sendEventsToCompanion()
   }
   
   initialize() {
@@ -98,8 +108,49 @@ export class Clairvoyance {
   saveEvents() {
     _.pairs(EventProvider.instance.events).forEach(p => p[1].save())
   }
+  
+  sendEventsToCompanion() {
+    //https://dev.fitbit.com/build/reference/device-api/messaging/
+    console.log("Max message size=" + peerSocket.MAX_MESSAGE_SIZE); //i don't know if that's bits or characters... we'll find out!!
+    
+    let nonSentData = this.getNonSentData()
+    let message = {
+      name: "training",
+      data: this.getNonSentData()
+    }
+    
+    if (messagequeue.sendMessage(message)) {
+        this.dataSentSuccessfully(nonSentData)
+    } else {
+        console.error('unable to send training data, starting event interval', e)
+      }
+    }
+  }
+  
+  getNonSentData() {
+    //decision between map and list for data, map feels better but takes a transform on teh otehr side
+    let data = []
 
-  //metrics, time, 
+    EventProvider.instance.events.forEach(event => {
+      //if any of the keys in any of the event data is above the last sent time
+      data.push({name: event.name, data: _.keys(event.data).filter(c => _.any(event.data[c], this.anyAboveLastSent.bind(this, event.lastSent))).map(dn => event.data[dn]) })
+    })
+    
+    return data
+  }
+
+  anyAboveLastSent(lastSent, data) {
+    return _.keys(data, key => _.any(data[key], c => _.any(ac => ac.timestamp < lastSent)))
+  }
+
+  dataSentSuccessfully(sentData) {
+    let justNow = new Date().getTime()
+    sentData.forEach(dn => {
+      if (sentData.data.length > 0) {
+        EventProvider.instance.events[dn.name].lastSent = justNow
+      }
+    })
+  }
 }
 
 const EVENT_DESCRIPTION_FILENAME = "stepevent.flat"
@@ -142,23 +193,23 @@ class EventDescription {
   getMetric(name, training) {
     let data = METRICS[name].getWithinDuration(date, this.duration)
     if (typeof name == 'string') {
-      return (date, accfitness) => FITNESS_FUNCTIONS['standarddev'](data, accfitness, this.training[name])
+      return (date, accfitness) => FITNESS_FUNCTIONS['standarddev'](data, accfitness, training[name])
     } else if (typeof name == 'object' && length in name && name.length >= 2) { //lazy array check
       if (name[1] == 'event') {
-        return (date, accfitness) => EventProvider.instance.events[name[0]].getFitness(data, accfitness, this.training[name[0]])
+        return (date, accfitness) => EventProvider.instance.events[name[0]].getFitness(data, accfitness, training[name[0]])
       }
 
       let [metric, fitnessfn, ...restfns] = name
       
       if (restfns.length === 0) {
-        return (date, accfitness) => this.getMetric(metric)(data, accfitness, this.training[name])
+        return (date, accfitness) => this.getMetric(metric)(data, accfitness, training[name])
       } else {
         //if the builder is not an event
         // call name[1..n] recursively, left to right
         return (date, accfitness) => {
           //newData will be the same unless modified by a fitness function
-          let [newData, newFitness] = this.getMetric(metric)(data, accfitness, this.training[name])
-          return this.getMetric([metric, ...restfns])(newData, newFitness, this.training[name])
+          let [newData, newFitness] = this.getMetric(metric)(data, accfitness, training[name])
+          return this.getMetric([metric, ...restfns])(newData, newFitness, training[name])
         }
       }
     }
@@ -187,16 +238,24 @@ class EventDescription {
   }
 
   collectForFitness(duration = undefined) {
+    let metrics = collectMetricNamesForFitness(duration)
+
+    duration = duration || this.duration
+    let date = new Date().getTime()
+    return metrics.map(ft => METRICS[ft].getWithinDuration(date, duration))
+  }
+  
+  collectMetricNamesForFitness(duration = undefined) {
     //ideally we'ed cache these results based on fitness function key hash
     /*
       store training data obtained via the "train" method
       store any results satisfying a fitness function compared to standard deviation
       so like:
         getFitness([ A... ]) = 0.5, 0.3, 0.2, 0.1
-        
+
         .275 mean avg
         .275 +/- 0.1479019945774904
-        
+
         maybe toss any under 2x standard deviation ?
     */
 
@@ -204,15 +263,13 @@ class EventDescription {
       this.fitness.map(fn => {
         if (typeof fn === 'string') { return fn }
         if (fn[1] === 'event') {
-          return EventProvider.instance.events[fn[0]].collectForFitness()
+          return EventProvider.instance.events[fn[0]].collectMetricNamesForFitness()
         }
 
         return fn[0]
       })))
 
-    duration = duration || this.duration
-    let date = new Date().getTime()
-    return metrics.map(ft => METRICS[ft].getWithinDuration(date, duration))
+    return metrics
   }
 
   load() {
@@ -222,6 +279,7 @@ class EventDescription {
 
       this.training = data.training
       this.data = data.data
+      this.lastsend = data.lastSent
     } catch (e) {
       console.error("could not load event file " + this.name, e)
     }
@@ -230,7 +288,7 @@ class EventDescription {
   save() {
     //save
     try {
-      writeFileSync(this.name + EVENT_DESCRIPTION_FILENAME, "utf-8", JSON.stringify({ training: this.training, data: this.data }))
+      writeFileSync(this.name + EVENT_DESCRIPTION_FILENAME, "utf-8", JSON.stringify({ lastSent: this.lastSent, training: this.training, data: this.data }))
     } catch (e) {
       console.error("could not save event file " + this.name, e) 
     }
@@ -276,7 +334,7 @@ const FITNESS_FUNCTIONS = {
   'normalize': (data, fitness, training) => [_normalize(data), fitness],
   'jerky':  (data, fitness, training) => [data, _knn(normalize(training), normalize(data))],
   'fitness': (data, fitness, training) => [fitness, fitness], //maybe useless? maybe not!
-  'inversefitness': (data, fitness, training) => [data, 1 - fitness]
+  'inversefitness': (data, fitness, training) => [data, 1 - fitness] 
 }
 
 function ftfn(fitnessfn) {
@@ -344,7 +402,10 @@ class EventProvider {
     this.events.wakeup = new EventDescriptor('wakeup', FIFTEEN_MINUTES, knn('hourInDay'), 'steps', 'acc')
     this.events.gotosleep = new EventDescriptor('gotosleep', HALF_HOUR, knn('hourInDay'), 'steps', 'acc')
     this.events.onbus = new EventDescriptor('onbus', FIFTEEN_MINUTES, 'steps', knn('minuteInHour'), knn('hourInDay'), chisquared(kalmanfilter('acc')))
-    this.events.driving = new EventDescriptor('driving', FIVE_MINUTES, 'steps', swaying(kalmanfilter('acc')))
+      //linearregress_signwave -> maybe use kalman filter to remove constant bus jitter?
+      // could maybe also make something to count 'stops'
+      // could compare noiseness from kalman filter?
+    this.events.drive = new EventDescriptor('drive', FIVE_MINUTES, 'steps', swaying(kalmanfilter('acc')))// { 'acc': { 'swaying': 'kalmanfilter' }}, { 'swaying': { 'kalmanfilter': 'acc' }})
     this.events.bike = new EventDescriptor('bike', TEN_MINUTES, 'steps', 'acc', 'hr')
     this.events.eating = new EventDescriptor('eating', TEN_MINUTES, 'steps', 'acc', 'bar', 'hr')
     this.events.breakfast = new EventDescriptor('breakfast', TEN_MINUTES, event('eating'))

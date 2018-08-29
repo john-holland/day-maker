@@ -127,7 +127,7 @@ export class Alarm {
 		let minute = getMinutes(date)
     let today = getDay(date)
     
-    if (this.disableAlarm) {
+    if (!this.alarmEnabled || this.disableAlarm) {
       return false
     }
     

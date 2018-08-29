@@ -86,9 +86,10 @@ todo
    | -> store public id of the user in nosql but do not use for generic insights
    \ -> create polling event to copy over to companion and off to server
     | -> store last sent timestamp and just send training data with timestamps after that
-    \ -> provide ack for last sent, then update alarm settings and save.
+    \ -> provide ack for last sent, then update alarm settings and save. (if local storage on the companion works I can omit the ack)
   
   abstract settings out of the alarm class
+  
   
   make sure to give ability to reset to default training once I have that data in there
   
@@ -162,22 +163,36 @@ alarmInterval();
 //update and save settings received
 messaging.peerSocket.onmessage = function({data}) {
   let ui = DayMaker.instance.default;
+  
+  let { name, data } = data
+  
+  if (name === 'settings') {
+    if (ui.alarm.showBatteryLevel != data.showBatteryLevel) {
+      ui.alarm.showBatteryLevel = data.showBatteryLevel
+      DayMaker.instance.handlePowerLevel()
+    }
 
-  if (ui.alarm.showBatteryLevel != data.showBatteryLevel) {
-    ui.alarm.showBatteryLevel = data.showBatteryLevel
-    DayMaker.instance.handlePowerLevel()
+    ui.alarm.saveAlarmData(data)
+
+    ui.showOrHideWakeupImage()
+
+    updateReceived = true
+
+    if (alarmTimeoutId !== undefined) clearTimeout(alarmTimeoutId)
+    alarmInterval()
+    console.log('updated settings')
+  } else if (name === 'training') {
+    console.log('received new training data')
+    
+    let events = DayMaker.instance.clairvoyance.events
+    _.keys(data, key => {
+      if (key in events) {
+        events[key].training = data[key]
+        console.log('updated training for event, ' + key)
+      }
+    })
   }
   
-  ui.alarm.saveAlarmData(data)
-  
-  ui.showOrHideWakeupImage()
-
-  updateReceived = true
-  
-  if (alarmTimeoutId !== undefined) clearTimeout(alarmTimeoutId)
-  alarmInterval()
-  
-  console.log('updated')
 }
 
 // Update the clock every second / minute

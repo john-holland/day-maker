@@ -3,6 +3,9 @@ import { _ } from '../../common/underscore'
 import { $, $at } from '../../common/view'
 import { UserInterface } from '../ui'
 import { vibration } from "haptics"
+import { PeerMessageQueue } from "../../common/peermessagequeue"
+
+let messagequeue = new PeerMessageQueue()
 
 export class SettingsUI extends UserInterface {
   name = 'settings'
@@ -15,7 +18,15 @@ export class SettingsUI extends UserInterface {
       if (setting == 'training') {
         this.daymaker.trainingUI.starttraining()
       } else if (setting == 'toggle alarm') {
-        this.daymaker.alarm
+        this.daymaker.alarm.alarmEnabled = !this.daymaker.alarm.alarmEnabled
+        this.daymaker.alarm.disableAlarm = !this.daymaker.alarm.disableAlarm
+        messagequeue.sendMessage({
+          name: "settings",
+          data: {
+            alarmEnabled: this.daymaker.alarm.alarmEnabled,
+            disableAlarm: this.daymaker.alarm.disableAlarm            
+          }
+        })
       }
     })
   }

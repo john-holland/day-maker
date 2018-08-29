@@ -127,9 +127,33 @@ settingsStorage.onchange = function(evt) {
     
     if (settings.showWakeupImage) tryGetNewBackgroundImage()
     
-    messaging.peerSocket.send(settings);
+    messaging.peerSocket.send({ name: 'settings', data: settings });
   } else {
     console.log("companion - no connection");
+  }
+}
+
+messaging.peerSocket.onmessage = function({data}) {  
+  let { name, data } = data
+  
+  if (name === 'settings') {
+    _.keys(data).forEach(key => settingsStorage.setItem(key, data[key]))
+  } else if (name === 'training') {
+    console.log('received new training data')
+    
+    //save data locally:
+    //  https://dev.fitbit.com/build/reference/companion-api/storage/ 
+    //then:
+    //upload to server
+    //  https://dev.fitbit.com/build/reference/companion-api/fetch/
+    // or start polling every 15 minutes to try to send this data
+    
+    // it is tempting to use https://dev.fitbit.com/build/reference/device-api/user-profile/ as an id
+    // as of now no unique device id is available, could use guid lib or request 2 factor auth in settings page,
+    //  then retrieve from profile
+
+    //todo: see if storage limit on setting would allow storing training data
+    postData('aws url', data).then().catch(error => console.log(error))
   }
 }
 
@@ -149,3 +173,26 @@ let settingsSendInterval = setInterval(function() {
     clearInterval(settingsSendInterval);
   }
 }, 10 * 1000)
+
+
+postData(`http://example.com/answer`, {answer: 42})
+  .then(data => console.log(JSON.stringify(data))) // JSON-string from `response.json()` call
+  .catch(error => console.error(error));
+
+function postData(url = ``, data = {}) {
+  // Default options are marked with *
+    return fetch(url, {
+        method: "POST", // *GET, POST, PUT, DELETE, etc.
+        mode: "cors", // no-cors, cors, *same-origin
+        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: "same-origin", // include, same-origin, *omit
+        headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            // "Content-Type": "application/x-www-form-urlencoded",
+        },
+        redirect: "follow", // manual, *follow, error
+        referrer: "no-referrer", // no-referrer, *client
+        body: JSON.stringify(data), // body data type must match "Content-Type" header
+    })
+    .then(response => response.json()); // parses response to JSON
+}
