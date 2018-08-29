@@ -123,7 +123,6 @@ export class Clairvoyance {
         this.dataSentSuccessfully(nonSentData)
     } else {
         console.error('unable to send training data, starting event interval', e)
-      }
     }
   }
   
