@@ -44,15 +44,15 @@ export class DayMaker extends Application {
         this.meterWidgetModel = new MeterWidgetModel(this.meterWidget, 5)
         this.settings = new SettingsUI(this)
         this.training = new TrainingUI(this)
-        document.getElementById("settings-btn").onclick => this.switchTo('settings')
+        document.getElementById("settings-btn").onclick = () => this.switchTo('settings')
       
         this.clairvoyance.initialize()
-        this.clairvoyance.startMetricCollection()
-        this.likelyEventsIntervalId = setInterval(this.metricCollectionInterval.bind(this), 15*60*1000)
 
         //todo review: this seems like something that clarivoyance could handle internally
         this.setInterval(this.clairvoyance.saveEvents.bind(this.clairvoyance), 60*60*1000)
 
+
+      
         this.handlePowerLevel()
           
         document.getElementById("boundingbox").onmouseup = this.onmouseup.bind(this)

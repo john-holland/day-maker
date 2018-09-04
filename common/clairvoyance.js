@@ -99,6 +99,7 @@ export class Clairvoyance {
   
   initialize() {
     this.loadEvents()
+    this.startMetricCollection()
   }
 
   loadEvents() {
@@ -123,6 +124,7 @@ export class Clairvoyance {
         this.dataSentSuccessfully(nonSentData)
     } else {
         console.error('unable to send training data, starting event interval', e)
+      }
     }
   }
   
@@ -333,7 +335,7 @@ const FITNESS_FUNCTIONS = {
   'normalize': (data, fitness, training) => [_normalize(data), fitness],
   'jerky':  (data, fitness, training) => [data, _knn(normalize(training), normalize(data))],
   'fitness': (data, fitness, training) => [fitness, fitness], //maybe useless? maybe not!
-  'inversefitness': (data, fitness, training) => [data, 1 - fitness] 
+  'inversefitness': (data, fitness, training) => [data, 1 - fitness]
 }
 
 function ftfn(fitnessfn) {

@@ -140,7 +140,8 @@ messaging.peerSocket.onmessage = function({data}) {
     _.keys(data).forEach(key => settingsStorage.setItem(key, data[key]))
   } else if (name === 'training') {
     console.log('received new training data')
-    
+      
+    persistData(data)
     //save data locally:
     //  https://dev.fitbit.com/build/reference/companion-api/storage/ 
     //then:
@@ -151,10 +152,25 @@ messaging.peerSocket.onmessage = function({data}) {
     // it is tempting to use https://dev.fitbit.com/build/reference/device-api/user-profile/ as an id
     // as of now no unique device id is available, could use guid lib or request 2 factor auth in settings page,
     //  then retrieve from profile
-
-    //todo: see if storage limit on setting would allow storing training data
-    postData('aws url', data).then().catch(error => console.log(error))
   }
+}
+
+let persistIntervalId = undefined
+let FIFTEEN_MINUTES = 15 * 60 * 1000
+
+function persistData(data) {
+  let unsenttraining = settingsStorage.getItem('unsenttraining')
+  unsenttraining = !!unsenttraining ?  unsenttraining.concat(data) : data
+  
+  postData('https://relz8bq5l9.execute-api.eu-west-1.amazonaws.com/production/', data, 'PUT')
+    .then(error => {
+      clearInterval(persistIntervalId)
+      persistIntervalId = undefined
+      settingsStorage.setItem('unsenttraining', [])
+    }).catch(error => {
+      persistIntervalId = setInterval(() => persistData(unsenttraining), FIFTEEN_MINUTES)
+      settingsStorage.setItem('unsenttraining', unsenttraining)
+    })
 }
 
 let getShowWakeupImage = () => extractSetting('showWakeupImage', true, mapToBoolean)
@@ -164,7 +180,7 @@ let settingsSendInterval = setInterval(function() {
     if (getShowWakeupImage()) tryGetNewBackgroundImage()
     let settings
     try {
-     settings = getSettings() 
+      settings = getSettings() 
     } catch (e) {
       console.log("error from getSettings", e)
     }
@@ -174,18 +190,13 @@ let settingsSendInterval = setInterval(function() {
   }
 }, 10 * 1000)
 
-
-postData(`http://example.com/answer`, {answer: 42})
-  .then(data => console.log(JSON.stringify(data))) // JSON-string from `response.json()` call
-  .catch(error => console.error(error));
-
-function postData(url = ``, data = {}) {
+function postData(url = ``, data = {}, method = 'POST') {
   // Default options are marked with *
     return fetch(url, {
-        method: "POST", // *GET, POST, PUT, DELETE, etc.
-        mode: "cors", // no-cors, cors, *same-origin
+        method: method, // *GET, POST, PUT, DELETE, etc.
+        //mode: "cors", // no-cors, cors, *same-origin
         cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: "same-origin", // include, same-origin, *omit
+        //credentials: "*", // include, same-origin, *omit
         headers: {
             "Content-Type": "application/json; charset=utf-8",
             // "Content-Type": "application/x-www-form-urlencoded",

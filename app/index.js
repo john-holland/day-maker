@@ -73,6 +73,11 @@ ideas:
    should look at thresholds for fitness functions, and develop some method for "minimum acceptable fitness"
     \ -> once I am confident in the confidence scores, we should not present "were you doing?" and instead just have a review function
 
+  identify the profiles of healthy people and those who use the todo feature a lot, 
+    and do a transform of the current user's profile to the healthy user's profile,
+    number of suggestions should amount to a linear progression from current event 
+    profile to the target profile
+
 todo
   user aws lambda to interact with dynamo
    \ -> implement todo list page with 2factor auth
@@ -90,6 +95,7 @@ todo
   
   abstract settings out of the alarm class
   
+  uh i think save may need data + training, currently just data idk  
   
   make sure to give ability to reset to default training once I have that data in there
   
