@@ -93,6 +93,8 @@ todo
     | -> store last sent timestamp and just send training data with timestamps after that
     \ -> provide ack for last sent, then update alarm settings and save. (if local storage on the companion works I can omit the ack)
   
+  allow for download of data / deletion of account related data (keep anonymized data in tables? legality smchargan?)
+  
   abstract settings out of the alarm class
   
   uh i think save may need data + training, currently just data idk  
@@ -100,6 +102,7 @@ todo
   make sure to give ability to reset to default training once I have that data in there
   
   create similar events to the existing ones but only using time, and present "should you be running?"
+   -> probably just need to use standard deviation and a couple others
   the onmouseup event might need to be tweaked
   write tests for predictor.js and metric-collection.js
 
@@ -126,9 +129,11 @@ done
   implemented a reset for non-migrateable settings configurations
 */
 
-
+console.log('before start')
 // Create and start the application.
 DayMaker.start();
+
+console.log('after start')
 
 
 let updateReceived = false;

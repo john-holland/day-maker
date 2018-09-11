@@ -1,11 +1,12 @@
 import document from "document";
-import { _ } from '../../common/underscore'
+import { _ } from '../../common/lfn'
 import { $, $at } from '../../common/view'
 import { UserInterface } from '../ui'
 import { vibration } from "haptics"
 import { PeerMessageQueue } from "../../common/peermessagequeue"
 
 let messagequeue = new PeerMessageQueue()
+let $ = $at('settings')
 
 export class SettingsUI extends UserInterface {
   name = 'settings'
@@ -13,8 +14,10 @@ export class SettingsUI extends UserInterface {
 
   constructor(daymaker) {
     this.daymaker = daymaker
+    this.$ = $
+    this.el = this.$()
     
-    this.buttonlist('#settings-list .items', ['training', 'toggle alarm'], setting => {
+    this.buttonlist('#settings-list .items', ['training', 'toggle alarm', 'go back'], setting => {
       if (setting == 'training') {
         this.daymaker.trainingUI.starttraining()
       } else if (setting == 'toggle alarm') {
@@ -27,6 +30,8 @@ export class SettingsUI extends UserInterface {
             disableAlarm: this.daymaker.alarm.disableAlarm            
           }
         })
+      } else {
+        this.daymaker.switchBackToDefault()
       }
     })
   }

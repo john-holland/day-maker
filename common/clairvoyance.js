@@ -1,7 +1,7 @@
 import { today } from "user-activity"
 import { KalmanFilter } from "./fitness-functions/kalman-filter"
 import { scheduler, steps, elevation, heartRateMonitor, hr, power, incharger, calories, accelerometer, barometer, MetricHistogram } from "./metric-collection"
-import { _ } from './underscore'
+import { _ } from './lfn'
 import { _knn } from './fitness-functions/_knn'
 import { chiSquaredFitness } from './fitness-functions/chi-squared-test'
 import { euclideanDistance } from './fitness-functions/euclidean-distance'
@@ -70,7 +70,7 @@ export class Clairvoyance {
     
     let e = EventProvider.instance.events[event]
 
-    let events = _.keys(EventProvider.instance.events, p => Math.abs(hashCode(p) % 100)
+    let events = _.keys(EventProvider.instance.events, p => Math.abs(hashCode(p) % 100))
     if (_.uniq(events).length != events.length) {
       //todo: replace this with a persistent id collection map
       console.error('hashing function collision!')
@@ -91,7 +91,7 @@ export class Clairvoyance {
     e.data.push(e.collectForFitness().reduce((acc, metric) => {
       acc[metric] = METRICS[metric].getWithinDuration(duration)
       return acc
-    }, { })
+    }, { }))
     
     e.save()
     this.sendEventsToCompanion()
@@ -112,7 +112,7 @@ export class Clairvoyance {
   
   sendEventsToCompanion() {
     //https://dev.fitbit.com/build/reference/device-api/messaging/
-    console.log("Max message size=" + peerSocket.MAX_MESSAGE_SIZE); //i don't know if that's bits or characters... we'll find out!!
+    console.log("Max message size=" + peerSocket.MAX_MESSAGE_SIZE) //i don't know if that's bits or characters... we'll find out!!
     
     let nonSentData = this.getNonSentData()
     let message = {
@@ -121,10 +121,9 @@ export class Clairvoyance {
     }
     
     if (messagequeue.sendMessage(message)) {
-        this.dataSentSuccessfully(nonSentData)
+      this.dataSentSuccessfully(nonSentData)
     } else {
-        console.error('unable to send training data, starting event interval', e)
-      }
+      console.error('unable to send training data, starting event interval', e)
     }
   }
   
@@ -134,7 +133,11 @@ export class Clairvoyance {
 
     EventProvider.instance.events.forEach(event => {
       //if any of the keys in any of the event data is above the last sent time
-      data.push({name: event.name, data: _.keys(event.data).filter(c => _.any(event.data[c], this.anyAboveLastSent.bind(this, event.lastSent))).map(dn => event.data[dn]) })
+      data.push({
+        name: event.name, 
+        data: _.keys(event.data)
+          .filter(c => _.any(event.data[c], this.anyAboveLastSent.bind(this, event.lastSent)))
+          .map(dn => event.data[dn]) })
     })
     
     return data
@@ -193,24 +196,29 @@ class EventDescription {
 
   getMetric(name, training) {
     let data = METRICS[name].getWithinDuration(date, this.duration)
+    //if name is a string then it's just standard deviation
     if (typeof name == 'string') {
       return (date, accfitness) => FITNESS_FUNCTIONS['standarddev'](data, accfitness, training[name])
     } else if (typeof name == 'object' && length in name && name.length >= 2) { //lazy array check
       if (name[1] == 'event') {
+        //if name[0] is an event, then we defer to that events fitness
         return (date, accfitness) => EventProvider.instance.events[name[0]].getFitness(data, accfitness, training[name[0]])
       }
 
+      //otherwise, destructure name into the metric, the fitness function we're trying to call, and the rest of the fitness functions
+      ///that will go after it
       let [metric, fitnessfn, ...restfns] = name
       
       if (restfns.length === 0) {
-        return (date, accfitness) => this.getMetric(metric)(data, accfitness, training[name])
+        //if we do not have any left, then just get the metric for the current one
+        return (date, accfitness) => this.getMetric(metric)(data, accfitness, training[metric])
       } else {
         //if the builder is not an event
         // call name[1..n] recursively, left to right
         return (date, accfitness) => {
           //newData will be the same unless modified by a fitness function
-          let [newData, newFitness] = this.getMetric(metric)(data, accfitness, training[name])
-          return this.getMetric([metric, ...restfns])(newData, newFitness, training[name])
+          let [newData, newFitness] = this.getMetric(metric)(data, accfitness, training[metric])
+          return this.getMetric([metric, ...restfns])(newData, newFitness, training[metric])
         }
       }
     }
@@ -376,17 +384,6 @@ function hashString(str){
 class EventProvider {
   events = {}
 
-  //movie with ar integration, where you need to download an app and you see different stuff compared to other people
-  // you could also have messages or instructions to hold the phone up in front of the person behind you
-  // you could have people register based on the day etc, and make it a "session", good for spy movies or action movies
-  // the writing would have to be good enough to accomidate audience interaction
-  //  i.e. it would give well to something with a super complicated plot (see: Primer), where the ending and results are certain, but the way they got that way
-  //  is less than obvious, and could be figured out by app integration
-
-  // you could also just do a bunch of hokay shit with disney movies etc, make so much money, so much
-  // /premium movie features/ -> //!movie dlc!// -> sort of bleh but idk people would like it probably
-  // plus the nice thing about dlc is you do not need to download it!
-  // so weird!
   constructor() {
     
   }

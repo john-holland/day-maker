@@ -15,6 +15,10 @@ import { ActiveMinutesUI } from './views/activeminutes'
 import { BatteryLevelUI } from './views/batterylevel'
 import { TrainingUI } from './views/training'
 import { SettingsUI } from './views/settings'
+import { EventConfirmationUI } from './views/event-confirmation'
+import { MeterWidget } from '../common/meter_widget'
+import { MeterWidgetModel } from '../common/meterwidgetmodel'
+import { Clairvoyance } from '../common/clairvoyance'
 
 export class DayMaker extends Application {
     default = new UserInterface()
@@ -28,6 +32,7 @@ export class DayMaker extends Application {
     meterWidget = null
     settings = null
     training = null
+    eventconfirmation = null
     
     // Called once on application's start...
     onMount(){
@@ -38,20 +43,20 @@ export class DayMaker extends Application {
         this.screens = [this.default, this.steps, this.calories, this.floors, this.activeminutes]
         this.screen = this.default
         this.screenIndex = 0
-      
+        console.log('started')
         this.meterWidget = new MeterWidget(document.getElementById("training-meter"), { goalValue: 5 })
         this.meterWidget.hide()
         this.meterWidgetModel = new MeterWidgetModel(this.meterWidget, 5)
         this.settings = new SettingsUI(this)
         this.training = new TrainingUI(this)
-        document.getElementById("settings-btn").onclick = () => this.switchTo('settings')
+        this.eventconfirmation = new EventConfirmationUI(this)
+        document.getElementById("btn-settings").onclick = () => this.switchTo('settings')
       
+        this.clairvoyance = new Clairvoyance()
         this.clairvoyance.initialize()
-
+        console.log('clairvoyance initialized')
         //todo review: this seems like something that clarivoyance could handle internally
         this.setInterval(this.clairvoyance.saveEvents.bind(this.clairvoyance), 60*60*1000)
-
-
       
         this.handlePowerLevel()
           

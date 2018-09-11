@@ -4,6 +4,7 @@
  */
 
 import { settingsStorage } from "settings";
+import { localStorage } from 'local-storage';
 import { outbox } from "file-transfer";
 import { device } from "peer";
 

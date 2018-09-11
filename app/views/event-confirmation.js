@@ -1,18 +1,22 @@
 import document from "document";
-import { _ } from '../../common/underscore'
+import { _ } from '../../common/lfn'
 import { $, $at } from '../../common/view'
 import { UserInterface } from '../ui'
 import { vibration } from "haptics"
 
+const $ = $at('#eventconfirmation');
+
 const EVENT_COUNT = 5
 export class EventConfirmationUI extends UserInterface {
-  name = 'event-confirmation'
+  name = 'eventconfirmation'
   trainList = document.getElementById("trainList")
   statusText = document.getElementById("status")
 
   constructor(daymaker) {
     this.daymaker = daymaker
     this.clairvoyance = daymaker.clairvoyance
+    this.$ = $
+    this.el = this.$()
   }
 
   listEvents(events) {

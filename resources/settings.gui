@@ -1,16 +1,11 @@
 <svg id="settings">
-  <symbol id="tile-event" href="#tile-list-item" focusable="false" pointer-events="visible" system-events="all">
-    <text id="text" />
-    <rect id="tile-divider-bottom" class="tile-divider-bottom" />
-    <rect id="touch-me" pointer-events="all" x="0" y="0" width="100%" height="100%-2" />
-  </symbol>
-
-  <symbol id="tile-event-no-match" href="#tile-list-item-no-match" focusable="false" pointer-events="visible" system-events="all">
-    <text id="text">no match</text>
-    <rect id="tile-divider-bottom" class="tile-divider-bottom" />
-    <rect id="touch-me" pointer-events="all" x="0" y="0" width="100%" height="100%-2" />
-  </symbol>
-  
+  <defs>
+    <symbol id="tile-event" href="#tile-list-item" focusable="false" pointer-events="visible" system-events="all">
+      <text id="text" />
+      <rect id="tile-divider-bottom" class="tile-divider-bottom" />
+      <rect id="touch-me" pointer-events="all" x="0" y="0" width="100%" height="100%-2" />
+    </symbol>
+  </defs>
   <use id="settings-list" href="#tile-list" height="100%" width="100%">
     <var id="reorder-enabled" value="0"/>
     <var id="separator-height-bottom" value="2"/>
@@ -21,7 +16,7 @@
     <use id="togglealarm" href="#tile-list-item" class="item">
       <use href="#tile-event" />
     </use>
-    <use id="" href="#tile-list-item" class="item">
+    <use id="goback" href="#tile-list-item" class="item">
       <use href="#tile-event" />
     </use>
   </use>
