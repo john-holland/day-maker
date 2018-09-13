@@ -1,3 +1,6 @@
+//speed analysis: constant, likely being used wrong in clairvoyance
+//  has to iterator over the whole data set
+
 /**
 * KalmanFilter
 * @class

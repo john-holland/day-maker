@@ -1,5 +1,7 @@
 import { log as LogGamma } from './gamma'
 
+//speed analysis: constant O(n) complexity but may face limitations around operations per second
+
 // The following code liberated from
 // http://www.math.ucla.edu/~tom/distributions/chisq.html
 // https://github.com/substack/chi-squared.js

@@ -1,5 +1,7 @@
 'use strict'
 
+//speed analysis: O(3n ^ 2 + n) or something, a little worrying, loop size constrained by data amounts, so possible limiting of set size will help?
+
 /**
   https://github.com/NathanEpstein/clusters
   License: MIT

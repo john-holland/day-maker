@@ -77,6 +77,9 @@ ideas:
     and do a transform of the current user's profile to the healthy user's profile,
     number of suggestions should amount to a linear progression from current event 
     profile to the target profile
+    
+  create a speed profile for fitness-functions, and possibly a stream processor for more complicated fitness functions, if necessary
+   \ -> avg together lots of thinly sliced data sets from a larger dataset for fitness values?
 
 todo
   user aws lambda to interact with dynamo
@@ -94,6 +97,14 @@ todo
     \ -> provide ack for last sent, then update alarm settings and save. (if local storage on the companion works I can omit the ack)
   
   allow for download of data / deletion of account related data (keep anonymized data in tables? legality smchargan?)
+  
+  add polling for 3rd party sources, to include in training optionally
+   \ -> listening to music
+   \ -> car?
+   \ -> location, home, car, work, etc
+   \ -> smart house?
+   
+  normalize fitness results for accurate guesses
   
   abstract settings out of the alarm class
   

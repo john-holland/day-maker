@@ -346,6 +346,21 @@ const FITNESS_FUNCTIONS = {
   'inversefitness': (data, fitness, training) => [data, 1 - fitness]
 }
 
+/**
+speed analysis:
+	__
+	.-'--`-._
+	'-O---O--'
+	clustermaker: ~ O(2-3 * n^2), mostly mapping and filtering, so iterations maybe not bad?
+	chi-squared-test: O(n^2) chi-squared maybe faces some iteration limits?
+	chi-squared: constant O(n) complexity but may face limitations around operations per second
+	euclidean-distance: constant O(n)
+	gamma: constant O(n) +/- insig ops if z is between 0.5 and 100, adjustable
+	k-means-clustering: O(3n ^ 2 + n) or something, a little worrying, loop size constrained by data amounts, so possible limiting of set size will help?
+	kalman-filter: constant, likely being used wrong in clairvoyance
+	  has to iterator over the whole data set
+*/
+
 function ftfn(fitnessfn) {
   return (args) => {
     let [metric, ...fitnessfns] = args

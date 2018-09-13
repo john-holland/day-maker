@@ -1,5 +1,7 @@
 import { cdf, pdf } from './chi-squared.js'
 
+//speed analysis: O(n^2) chi-squared maybe faces some iteration limits?
+
 //https://github.com/chipbell4/chi-squared-test
 // contributors: chipbell4, JMontagu - license: MIT
 

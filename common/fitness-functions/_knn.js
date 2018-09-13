@@ -1,7 +1,9 @@
 import { _ } from '../lfn'
 import { euclideanDistance } from './euclidean-distance.js'
 
-import {  } from './k-means-clustering.js'
+import { clusterMaker } from './k-means-clustering.js'
+
+//speed from clustermaker is ~ O(2-3 * n^2), mostly mapping and filtering, so iterations maybe not bad?
 
 //  maybe we want to do the following:
 /**
