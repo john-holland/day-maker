@@ -8,7 +8,7 @@
 * @license MIT License
 * @preserve
 */
-export default class KalmanFilter {
+export class KalmanFilter {
 
   /**
   * Create 1-dimensional kalman filter

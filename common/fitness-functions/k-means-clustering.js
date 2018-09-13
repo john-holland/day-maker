@@ -5,8 +5,7 @@
   License: MIT
 */
 
-module.exports = {
-
+export let clusterMaker = {
   data: getterSetter([], function(arrayOfArrays) {
     var n = arrayOfArrays[0].length;
     return (arrayOfArrays.map(function(array) {

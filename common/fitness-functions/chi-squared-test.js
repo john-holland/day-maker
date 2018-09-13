@@ -1,4 +1,4 @@
-import chi from './chi-squared.js'
+import { cdf, pdf } from './chi-squared.js'
 
 //https://github.com/chipbell4/chi-squared-test
 // contributors: chipbell4, JMontagu - license: MIT
@@ -43,7 +43,7 @@ var calculateChiSquaredStatistic = function(observations, expectations) {
  * @param degreesOfFreedomReduction The reduction in degrees of freedom. In general this is p + 1, where p is the number
  *                                  of parameters estimated
  */
-let chiSquaredTest = function(observations, expectations, degreesOfFreedomReduction) {
+export let chiSquaredTest = function(observations, expectations, degreesOfFreedomReduction) {
   var degreesOfFreedom = observations.length - degreesOfFreedomReduction
 
   var resultSet = calculateChiSquaredStatistic(observations, expectations)
@@ -51,11 +51,8 @@ let chiSquaredTest = function(observations, expectations, degreesOfFreedomReduct
   return resultSet;
 }
 
-export {
-  chiSquaredTest: chiSquaredTest,
-  chiSquaredFitness(data, training) {
-    return chiSquaredTest(data, training, 1).probability
-  }
+export let chiSquaredFitness = function(data, training) {
+  return chiSquaredTest(data, training, 1).probability
 }
 
 /**

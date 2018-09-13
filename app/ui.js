@@ -283,7 +283,7 @@ export class UserInterface extends View {
   showingWakeupImage = false
   backgroundTransitionDuration = 5000
   showOrHideWakeupImage() {
-    
+    this.backgroundImageEl.image = '/private/data/background.jpg'
     let showbackground = !this.showingWakeupImage && this.alarm.showSunrise()
     let hidebackground = this.showingWakeupImage && !this.alarm.showSunrise()
     let doNothing = !(showbackground || hidebackground)

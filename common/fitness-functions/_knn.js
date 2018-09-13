@@ -1,7 +1,7 @@
-import { _ } from './underscore.js'
+import { _ } from '../lfn'
 import { euclideanDistance } from './euclidean-distance.js'
 
-import { clusterMaker } from './k-means-clustering.js'
+import {  } from './k-means-clustering.js'
 
 //  maybe we want to do the following:
 /**
@@ -16,7 +16,7 @@ import { clusterMaker } from './k-means-clustering.js'
       
 */
 
-export {
+export const _knn = {
     _knn(training, data) {
       const centroid_count = 5
 
