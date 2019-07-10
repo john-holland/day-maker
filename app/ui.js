@@ -7,6 +7,7 @@ import { battery, charger } from "power";
 import { HeartRateSensor } from "heart-rate";
 import { View, $, $at } from '../common/view'
 import { display } from "display";
+import { StepGoalEstimation } from '../common/stepgoalestimation'
 
 const ALARM_HOUR = "hours"
 const ALARM_MINUTE = "minutes"
@@ -53,6 +54,7 @@ let heartrateColor = 'red'
 
 export class UserInterface extends View {  
   name = 'default'
+  stepGoalEstimation = new StepGoalEstimation()
 
   constructor() {
     this.alarm = alarm
@@ -85,8 +87,8 @@ export class UserInterface extends View {
 
 	onRender() {
     let { today, updateReceived } = this
-    if (!('today' in this) || !('updateReceived' in this)) return;
-		
+    if (!('today' in this) || !('updateReceived' in this)) return
+		if (this.name == 'settings' || this.name == 'training' || this.name == 'eventconfirmation') return
     let hours = today.getHours()
 		let minutes = today.getMinutes()
 		let steps = this.alarm.buzzing ? this.alarm.stepsToGo() : this.alarm.steps
@@ -112,11 +114,13 @@ export class UserInterface extends View {
     
     this.$("#time").text = `${hours}:${minutes}`
     
-    this.renderHeartRate();
+    this.renderHeartRate()
     
-    this.renderGoals();
+    this.renderGoals()
     
     this.adjustFontForTime()
+    
+    if (this.name === 'default') this.renderStepGoalEstimation()
     
  		if (!updateReceived && !this.obtainedSettings) {
      this.$("#message").text = "Open App to set alarm"
@@ -128,6 +132,19 @@ export class UserInterface extends View {
       this.$("#message").text = `${steps} steps at ${this.alarm.hour}:${util.zeroPad(this.alarm.minute)}`
     }
 	}
+
+  renderStepGoalEstimation() {
+    if (this.name === 'default') {
+      let stepsToGo = this.stepGoalEstimation.getStepsToGo()
+
+      let message = ''
+      if (stepsToGo > 0) {
+        message = this.stepGoalEstimation.getEstimation()
+      }
+      
+      this.$("#goalMinutes").text = message
+    }
+  }
 
   showHeartRate() {
     this.dateEl.style.visibility = "hidden"
@@ -196,6 +213,9 @@ export class UserInterface extends View {
       this.stepGoalEl.style.fill = pinkplum
       this.floorsGoalEl.style.fill = plumish
       this.activeMinutesGoalEl.style.fill = warm
+      if (this.name === 'default') {
+        this.$("#goalMinutes").style.fill = nightfontcolor
+      }
     } else {
       this.$('#time').style.fill = timeColor
       this.dateEl.style.fill = dateColor
@@ -206,6 +226,9 @@ export class UserInterface extends View {
       this.stepGoalEl.style.fill = stepGoalColor
       this.floorsGoalEl.style.fill = floorsGoalColor
       this.activeMinutesGoalEl.style.fill = activeMinutesGoalColor
+      if (this.name === 'default') {
+        this.$("#goalMinutes").style.fill = dateColor
+      }
     }
   }
 
@@ -260,7 +283,7 @@ export class UserInterface extends View {
   showingWakeupImage = false
   backgroundTransitionDuration = 5000
   showOrHideWakeupImage() {
-    
+    this.backgroundImageEl.image = '/private/data/background.jpg'
     let showbackground = !this.showingWakeupImage && this.alarm.showSunrise()
     let hidebackground = this.showingWakeupImage && !this.alarm.showSunrise()
     let doNothing = !(showbackground || hidebackground)

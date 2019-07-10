@@ -55,7 +55,8 @@ export class Alarm {
     let settings = readFileSync(SETTINGS_FILENAME, "utf-8")
     let { hour, minute, steps, 
           showHeartRate = true, 
-          disableAlarm = false, 
+          disableAlarm = false,
+          alarmEnabled = true,
           showBatteryLevel = true, 
           adjustBrightness = true,  
           bedtime = 23,
@@ -70,6 +71,7 @@ export class Alarm {
     this.steps = steps
     this.showHeartRate = showHeartRate
     this.disableAlarm = disableAlarm
+    this.alarmEnabled = !disableAlarm
     this.showBatteryLevel = showBatteryLevel
     this.adjustBrightness = adjustBrightness
     this.bedtime = bedtime
@@ -82,12 +84,15 @@ export class Alarm {
                  showHeartRate, disableAlarm, 
                  showBatteryLevel, adjustBrightness, 
                  logocounting, bedtime, showWakeupImage,
-                 silentInProgress}) {
+                 silentInProgress, alarmEnabled}) {
     this.hour = hour
     this.minute = minute
     this.steps = steps
     this.showHeartRate = showHeartRate
+    //todo: let alarmEnabled go for a release then remove
+    // think about a different migration strategy
     this.disableAlarm = disableAlarm
+    this.alarmEnabled = alarmEnabled
     this.showBatteryLevel = showBatteryLevel
     this.adjustBrightness = adjustBrightness
     this.bedtime = bedtime
@@ -100,7 +105,8 @@ export class Alarm {
         hour, minute, steps, 
         showHeartRate, disableAlarm, 
         showBatteryLevel, adjustBrightness,
-        showWakeupImage, silentInProgress
+        showWakeupImage, silentInProgress,
+        alarmEnabled
       }), "utf-8")
 
     this.resetForUpdate()
@@ -121,7 +127,7 @@ export class Alarm {
 		let minute = getMinutes(date)
     let today = getDay(date)
     
-    if (this.disableAlarm) {
+    if (!this.alarmEnabled || this.disableAlarm) {
       return false
     }
     

@@ -4,6 +4,7 @@
  */
 
 import { settingsStorage } from "settings";
+import { localStorage } from 'local-storage';
 import { outbox } from "file-transfer";
 import { device } from "peer";
 
@@ -66,6 +67,7 @@ function getSettings() {
       steps: extractSetting('steps', 50),
       showHeartRate: extractSetting('showheartrate', true, mapToBoolean),
       disableAlarm: extractSetting('disableAlarm', false, mapToBoolean),
+      alarmEnabled: extractSetting('alarmEnabled', true, mapToBoolean),
       showBatteryLevel: extractSetting('showBatteryLevel', true, mapToBoolean),
       adjustBrightness: extractSetting('adjustBrightness', true, mapToBoolean),
       logocounting: extractSetting('logocounting', true, mapToBoolean),
@@ -126,10 +128,50 @@ settingsStorage.onchange = function(evt) {
     
     if (settings.showWakeupImage) tryGetNewBackgroundImage()
     
-    messaging.peerSocket.send(settings);
+    messaging.peerSocket.send({ name: 'settings', data: settings });
   } else {
     console.log("companion - no connection");
   }
+}
+
+messaging.peerSocket.onmessage = function({data}) {  
+  let { name, dat } = data
+  
+  if (name === 'settings') {
+    _.keys(dat).forEach(key => settingsStorage.setItem(key, dat[key]))
+  } else if (name === 'training') {
+    console.log('received new training data')
+      
+    persistData(dat)
+    //save data locally:
+    //  https://dev.fitbit.com/build/reference/companion-api/storage/ 
+    //then:
+    //upload to server
+    //  https://dev.fitbit.com/build/reference/companion-api/fetch/
+    // or start polling every 15 minutes to try to send this data
+    
+    // it is tempting to use https://dev.fitbit.com/build/reference/device-api/user-profile/ as an id
+    // as of now no unique device id is available, could use guid lib or request 2 factor auth in settings page,
+    //  then retrieve from profile
+  }
+}
+
+let persistIntervalId = undefined
+let FIFTEEN_MINUTES = 15 * 60 * 1000
+
+function persistData(data) {
+  let unsenttraining = settingsStorage.getItem('unsenttraining')
+  unsenttraining = !!unsenttraining ?  unsenttraining.concat(data) : data
+  
+  postData('https://relz8bq5l9.execute-api.eu-west-1.amazonaws.com/production/', data, 'PUT')
+    .then(error => {
+      clearInterval(persistIntervalId)
+      persistIntervalId = undefined
+      settingsStorage.setItem('unsenttraining', [])
+    }).catch(error => {
+      persistIntervalId = setInterval(() => persistData(unsenttraining), FIFTEEN_MINUTES)
+      settingsStorage.setItem('unsenttraining', unsenttraining)
+    })
 }
 
 let getShowWakeupImage = () => extractSetting('showWakeupImage', true, mapToBoolean)
@@ -139,7 +181,7 @@ let settingsSendInterval = setInterval(function() {
     if (getShowWakeupImage()) tryGetNewBackgroundImage()
     let settings
     try {
-     settings = getSettings() 
+      settings = getSettings() 
     } catch (e) {
       console.log("error from getSettings", e)
     }
@@ -148,3 +190,21 @@ let settingsSendInterval = setInterval(function() {
     clearInterval(settingsSendInterval);
   }
 }, 10 * 1000)
+
+function postData(url = ``, data = {}, method = 'POST') {
+  // Default options are marked with *
+    return fetch(url, {
+        method: method, // *GET, POST, PUT, DELETE, etc.
+        //mode: "cors", // no-cors, cors, *same-origin
+        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+        //credentials: "*", // include, same-origin, *omit
+        headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            // "Content-Type": "application/x-www-form-urlencoded",
+        },
+        redirect: "follow", // manual, *follow, error
+        referrer: "no-referrer", // no-referrer, *client
+        body: JSON.stringify(data), // body data type must match "Content-Type" header
+    })
+    .then(response => response.json()); // parses response to JSON
+}
