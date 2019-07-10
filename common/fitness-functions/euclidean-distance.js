@@ -1,3 +1,5 @@
+//speed analysis: constant O(n)
+
 /**
 
 https://github.com/zeke/euclidean-distance

@@ -1,7 +1,7 @@
 import { today } from "user-activity"
 import { KalmanFilter } from "./fitness-functions/kalman-filter"
 import { scheduler, steps, elevation, heartRateMonitor, hr, power, incharger, calories, accelerometer, barometer, MetricHistogram } from "./metric-collection"
-import { _ } from './underscore'
+import { _ } from './lfn'
 import { _knn } from './fitness-functions/_knn'
 import { chiSquaredFitness } from './fitness-functions/chi-squared-test'
 import { euclideanDistance } from './fitness-functions/euclidean-distance'
@@ -57,7 +57,7 @@ export class Clairvoyance {
     @param date: the date
    */
   getLikelyEvents(top = 1, date = new Date().getTime(), dataEvalCount = -1) {
-    return _.first(this.getPredictions(date, dataEvalCount), top)
+    return this.getPredictions(date, dataEvalCount).then(results => _.first(results, top))
   }
 
   selectionMade(event, duration = undefined) {
@@ -70,7 +70,7 @@ export class Clairvoyance {
     
     let e = EventProvider.instance.events[event]
 
-    let events = _.keys(EventProvider.instance.events, p => Math.abs(hashCode(p) % 100)
+    let events = _.keys(EventProvider.instance.events, p => Math.abs(hashCode(p) % 100))
     if (_.uniq(events).length != events.length) {
       //todo: replace this with a persistent id collection map
       console.error('hashing function collision!')
@@ -91,7 +91,7 @@ export class Clairvoyance {
     e.data.push(e.collectForFitness().reduce((acc, metric) => {
       acc[metric] = METRICS[metric].getWithinDuration(duration)
       return acc
-    }, { })
+    }, { }))
     
     e.save()
     this.sendEventsToCompanion()
@@ -112,7 +112,7 @@ export class Clairvoyance {
   
   sendEventsToCompanion() {
     //https://dev.fitbit.com/build/reference/device-api/messaging/
-    console.log("Max message size=" + peerSocket.MAX_MESSAGE_SIZE); //i don't know if that's bits or characters... we'll find out!!
+    console.log("Max message size=" + peerSocket.MAX_MESSAGE_SIZE) //i don't know if that's bits or characters... we'll find out!!
     
     let nonSentData = this.getNonSentData()
     let message = {
@@ -121,10 +121,9 @@ export class Clairvoyance {
     }
     
     if (messagequeue.sendMessage(message)) {
-        this.dataSentSuccessfully(nonSentData)
+      this.dataSentSuccessfully(nonSentData)
     } else {
-        console.error('unable to send training data, starting event interval', e)
-      }
+      console.error('unable to send training data, starting event interval', e)
     }
   }
   
@@ -134,7 +133,11 @@ export class Clairvoyance {
 
     EventProvider.instance.events.forEach(event => {
       //if any of the keys in any of the event data is above the last sent time
-      data.push({name: event.name, data: _.keys(event.data).filter(c => _.any(event.data[c], this.anyAboveLastSent.bind(this, event.lastSent))).map(dn => event.data[dn]) })
+      data.push({
+        name: event.name, 
+        data: _.keys(event.data)
+          .filter(c => _.any(event.data[c], this.anyAboveLastSent.bind(this, event.lastSent)))
+          .map(dn => event.data[dn]) })
     })
     
     return data
@@ -191,26 +194,32 @@ class EventDescription {
     this.assembleFitness(this.fitness)
   }
 
+  //todo: maybe make sure that the nested case handles sequences / promises
   getMetric(name, training) {
     let data = METRICS[name].getWithinDuration(date, this.duration)
+    //if name is a string then it's just standard deviation
     if (typeof name == 'string') {
       return (date, accfitness) => FITNESS_FUNCTIONS['standarddev'](data, accfitness, training[name])
     } else if (typeof name == 'object' && length in name && name.length >= 2) { //lazy array check
       if (name[1] == 'event') {
+        //if name[0] is an event, then we defer to that events fitness
         return (date, accfitness) => EventProvider.instance.events[name[0]].getFitness(data, accfitness, training[name[0]])
       }
 
+      //otherwise, destructure name into the metric, the fitness function we're trying to call, and the rest of the fitness functions
+      ///that will go after it
       let [metric, fitnessfn, ...restfns] = name
       
       if (restfns.length === 0) {
-        return (date, accfitness) => this.getMetric(metric)(data, accfitness, training[name])
+        //if we do not have any left, then just get the metric for the current one
+        return (date, accfitness) => this.getMetric(metric)(data, accfitness, training[metric])
       } else {
         //if the builder is not an event
         // call name[1..n] recursively, left to right
         return (date, accfitness) => {
           //newData will be the same unless modified by a fitness function
-          let [newData, newFitness] = this.getMetric(metric)(data, accfitness, training[name])
-          return this.getMetric([metric, ...restfns])(newData, newFitness, training[name])
+          let [newData, newFitness] = this.getMetric(metric)(data, accfitness, training[metric])
+          return this.getMetric([metric, ...restfns])(newData, newFitness, training[metric])
         }
       }
     }
@@ -225,10 +234,22 @@ class EventDescription {
     //if we end up normalizing the fitness value returned by getFitness,
     //  then we should also just stop when we have a complete fitness value
     //  e.x. if _.sum(fitnesses) == 1 then break
-    return _.first(_.sortby(datas.map(td => {
-      let fitnesses = this.fitness.map(fn => this.getMetric(fn, td)(date, acc))
-      return _.sum(fitnesses, fns => fns[1])
-    }), d => d))
+    let fitnessSequencer = new SequencePriorityQueue()
+    let fitnesses = this.fitness.map(fn => this.getMetric(fn, td)(date, acc))
+    fitnessSequencer.seqeuences = fitnesses.map(f => {
+      if (fns[1] instanceof Sequence) return fns[1]
+      if (fns[1] instanceof Promise) {
+        let seq = new Sequence('promise')
+        fns[1].then(result => seq.resolve(result)).error(error => seq.error(error))
+        return seq
+      }
+      return new Sequence('sumtin').resolve(fns[1])
+    })
+    return new Promise((resolve, reject) => {
+      fitnessSequencer.completeSequence().then(results => {
+        resolve(_.sum(results))
+      })
+    })
   }
 
   //idealy this should be toggle-able
@@ -300,19 +321,23 @@ class EventDescription {
   }
 }
 
-let kalmanFilter = function(data) {
-  let kalmanFilter = new KalmanFilter({R: 0.01, Q: 20})
+let kalmanFilter = function(sequence, data) {
+  return sequence.add(() => {
+    let kalmanFilter = new KalmanFilter({R: 0.01, Q: 20})
 
-  return data.map(v => kalmanFilter.filter(v))
+    sequence.resolve(data.map(v => kalmanFilter.filter(v)))
+  }, data, 1)
 }
 
-let _normalize = function(data) {
-  let zero = new Array(len).fill(0)
-  let lengths = euclideanDistance(d, zero)
-  let max = _.max(lengths)
-  if (max == 0) { max = 1 }
-  
-  return lengths.map(l => l / max)
+let _normalize = function(sequence, data) {
+  return sequence.add(() => {
+    let zero = new Array(len).fill(0)
+    let lengths = euclideanDistance(d, zero)
+    let max = _.max(lengths)
+    if (max == 0) { max = 1 }
+
+    sequence.resolve(lengths.map(l => l / max))
+  }, data, 1)
 }
 
 // support vector machine with polynomial kernal
@@ -326,17 +351,62 @@ let _normalize = function(data) {
 // did not end up using it but a good simple knn explanation http://16cards.com/2013/06/06/knn-in-parse-cloud/
 
 const FITNESS_FUNCTIONS = {
-  //closest to the mean = 1
-  'standarddev': (data, fitness, training) => [data, 1 - Math.abs(average(training) - average(data)) / standardDeviation(data) + fitness],
-  'swaying': (data, fitness, training) => [data, chiSquaredFitness(normalize(data), normalize(training))],
-  'kalmanfilter': (data, fitness, training) => [kalmanFilter(data), fitness],
-  'knn': (data, fitness, training) => [data, _knn(training, data)],
-  'chisquared': (data, fitness, training) => [data, chiSquaredFitness(data, training)],
-  'normalize': (data, fitness, training) => [_normalize(data), fitness],
-  'jerky':  (data, fitness, training) => [data, _knn(normalize(training), normalize(data))],
-  'fitness': (data, fitness, training) => [fitness, fitness], //maybe useless? maybe not!
-  'inversefitness': (data, fitness, training) => [data, 1 - fitness]
+  /**
+    @summary for any value in the return array, return a sequence or the value or a promise
+   */
+  'standarddev': (sequence, data, fitness, training) => {
+    let avgTraining, avgData, standarddev
+    sequence.add(() => avgTraining = average(training), training, 1)
+    sequence.add(() => avgData = average(data), data, 1)
+    sequence.add(() => standarddev = standardDeviation(data), data, 1)
+    sequence.add(() => sequence.resolve(1 - Math.abs(avgTraining - avgData) / standarddev + fitness), 0, 0)
+    return [data, sequence]
+  },
+  'swaying': (sequence, data, fitness, training) => [data, _normalize(sequence, data)
+                .then(normdata => _normalize(sequence, training)
+                .then(normtraining => chiSquaredFitness(sequence, normdata, normtraining)))],
+  'kalmanfilter': (sequence, data, fitness, training) => [kalmanFilter(sequence, data), fitness],
+  'knn': (sequence, data, fitness, training) => [data, _knn(sequence, training, data)],
+  'chisquared': (sequence, data, fitness, training) => [data, chiSquaredFitness(sequence, data, training)],
+  'normalize': (sequence, data, fitness, training) => [_normalize(sequence, data), fitness],
+  'jerky':  (sequence, data, fitness, training) => [data, _normalize(sequence, data)
+                .then(normdata => _normalize(sequence, training)
+                .then(normtraining => _knn(sequence, normdata, normtraining)))],
+  'fitness': (sequence, data, fitness, training) => [fitness, fitness], //maybe useless? maybe not!
+  'inversefitness': (sequence, data, fitness, training) => [data, 1 - fitness]
 }
+
+function discreteFitnessFunctions() {
+  return {
+    //closest to the mean = 1
+    'standarddev': (data, fitness, training) => [data, 1 - Math.abs(average(training) - average(data)) / standardDeviation(data) + fitness],
+    'swaying': (data, fitness, training) => [data, chiSquaredFitness(normalize(data), normalize(training))],
+    'kalmanfilter': (data, fitness, training) => [kalmanFilter(data), fitness],
+    'knn': (data, fitness, training) => [data, _knn(training, data)],
+    'chisquared': (data, fitness, training) => [data, chiSquaredFitness(data, training)],
+    'normalize': (data, fitness, training) => [_normalize(data), fitness],
+    'jerky':  (data, fitness, training) => [data, _knn(normalize(training), normalize(data))],
+    'fitness': (data, fitness, training) => [fitness, fitness], //maybe useless? maybe not!
+    'inversefitness': (data, fitness, training) => [data, 1 - fitness]
+  }
+}
+
+
+
+/**
+speed analysis:
+	__
+	.-'--`-._
+	'-O---O--'
+	clustermaker: ~ O(2-3 * n^2), mostly mapping and filtering, so iterations maybe not bad?
+	chi-squared-test: O(n^2) chi-squared maybe faces some iteration limits?
+	chi-squared: constant O(n) complexity but may face limitations around operations per second
+	euclidean-distance: constant O(n)
+	gamma: constant O(n) +/- insig ops if z is between 0.5 and 100, adjustable
+	k-means-clustering: O(3n ^ 2 + n) or something, a little worrying, loop size constrained by data amounts, so possible limiting of set size will help?
+	kalman-filter: constant, likely being used wrong in clairvoyance
+	  has to iterator over the whole data set
+*/
 
 function ftfn(fitnessfn) {
   return (args) => {
@@ -376,17 +446,6 @@ function hashString(str){
 class EventProvider {
   events = {}
 
-  //movie with ar integration, where you need to download an app and you see different stuff compared to other people
-  // you could also have messages or instructions to hold the phone up in front of the person behind you
-  // you could have people register based on the day etc, and make it a "session", good for spy movies or action movies
-  // the writing would have to be good enough to accomidate audience interaction
-  //  i.e. it would give well to something with a super complicated plot (see: Primer), where the ending and results are certain, but the way they got that way
-  //  is less than obvious, and could be figured out by app integration
-
-  // you could also just do a bunch of hokay shit with disney movies etc, make so much money, so much
-  // /premium movie features/ -> //!movie dlc!// -> sort of bleh but idk people would like it probably
-  // plus the nice thing about dlc is you do not need to download it!
-  // so weird!
   constructor() {
     
   }
@@ -433,7 +492,26 @@ class EventProvider {
     @return returns events sorted by their fitness score, in the form [eventname, fitness]    
    */
   getSortedByFitness(date, dataEvalCount) {
-    return _.sortby(_.pairs(this.events).map(e => [e[0], e[1].getFitness(date, 1, dataEvalCount)]), e => e[1])
+    //now getFitness will return a promise with the resolution of the sequencer.
+    let events = _.pairs(this.events).map(e => [e[0], e[1]])
+    let currentEvent = events.pop()
+    let results = []
+    //so we gotta sequence those promises one at a time
+    return new Promise((resolve, reject) => {
+      let sequence = () => {
+        currentEvent[1].getFitness(date, 1, dataEvalCount).then(result => {
+          results.push([currentEvent[0], result])
+          if (events.length > 0) {
+            currentEvent = events.pop()
+            sequence()
+          } else {
+            resolve(_.sortby(results, e => e[1]))
+          }
+        })
+      }
+      
+      sequence()
+    })
   }
 
   getEvents(name) {

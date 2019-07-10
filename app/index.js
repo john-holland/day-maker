@@ -77,8 +77,46 @@ ideas:
     and do a transform of the current user's profile to the healthy user's profile,
     number of suggestions should amount to a linear progression from current event 
     profile to the target profile
+    
+  create a speed profile for fitness-functions, and possibly a stream processor for more complicated fitness functions, if necessary
+   \ -> avg together lots of thinly sliced data sets from a larger dataset for fitness values?
 
 todo
+  finish fixing settings list, and propegate those changes to event confirmation
+
+  integrate sequencer with the fitness functions
+    -> fitness func clairvoyance defs --> done!
+    -> actual fitness functions... not done
+    -> finish integrating promise based returns for getFitness etc
+  figure out any lists to be replaced with int16array's
+  change data loading for clairvoyance to lazy loading of data from disk, and unloading
+  
+  refactor clairvoyance classes into separate classes, then copy it to another application to test independently
+  
+  fix up training and settings - list do not display and some selectors not working
+  
+  refactor ui.js to create a base class for screens and one below that for modal ui's like settings
+  
+  currently the metric collection happens psudo randomly - there should be a good distrobution of times,
+    weighted on what needs what and how best they coincide, also we could opt to collect those metrics
+    at a more frequent interval
+
+  optimization:
+   -> switch to [int16arrays] or DataBuffer DataViews, or int16arrays
+   MAYBE?! -> modify appropriate fitness functions to accept a DataStream from DataBuffer?
+    \=> https://www.html5rocks.com/en/tutorials/webgl/typed_arrays/
+    \-> and https://github.com/kig/DataStream.js/tree/master
+    \-> just consume the array 2 at a time, for as many items as requested?
+   YEAH! -> only load the data for EventDescriptors and DataHistograms when necessary?
+   I GUESS! -> change the DataHistograms into log models -> fs.openSync(filename: string, flags: "a")
+    YEAH IDK, APPEND IS AN OPTION BUT THEN IT GETS TOO BIG SO THAT'S AN ISSUE
+    MAX SIZE AND READ ALL / OVERWITE SEEMS HEAVY HANDED? 
+    \-> though it's unclear about how to write to it? maybe just use writeFileSync after opening?
+   -> transfer of large back logs could be a problem 
+    \-> solution?:  make metric histograms loop buffer / toroidal for data size limits
+                    pull in reverse chronological order to prevent data thrash?
+                     -> even though it seems backwards the nosql solution shouldn't care
+  
   user aws lambda to interact with dynamo
    \ -> implement todo list page with 2factor auth
     |-> use the events to "auto complete" todo items
@@ -93,6 +131,17 @@ todo
     | -> store last sent timestamp and just send training data with timestamps after that
     \ -> provide ack for last sent, then update alarm settings and save. (if local storage on the companion works I can omit the ack)
   
+  allow for download of data / deletion of account related data (keep anonymized data in tables? legality smchargan?)
+  
+  add polling for 3rd party sources, to include in training optionally
+   \ -> listening to music
+   \ -> car?
+   \ -> location, home, car, work, etc
+   \ -> geofencing
+   \ -> smart house?
+   
+  normalize fitness results for accurate guesses
+  
   abstract settings out of the alarm class
   
   uh i think save may need data + training, currently just data idk  
@@ -100,6 +149,7 @@ todo
   make sure to give ability to reset to default training once I have that data in there
   
   create similar events to the existing ones but only using time, and present "should you be running?"
+   -> probably just need to use standard deviation and a couple others
   the onmouseup event might need to be tweaked
   write tests for predictor.js and metric-collection.js
 
@@ -124,11 +174,30 @@ done
   adjusted the sunrise image dimensions to the device resolution
   decided not to truncate hours in settings (7.5:30 is a weird time to allow) //if people really want to weird and ok
   implemented a reset for non-migrateable settings configurations
+  
+didn't
+  NO! instead implement sequencer -> any fitness functions candidates for map reduce?
+     - chi-squared-test for sure: main loop that calls calculateChiSquaredSingle or w/e
+     - euclidean-distance
+     - k means clustering starts with a big ol' map reduce, and the rest of it is full of 
+        highly streamable / chunkable algorithms
+     - kalman filter is incorrectly implemented right now anyways, as it should run on a collection
+        iterated over
+   NO! instead implement sequencer, i mean sort of idk, it'll use normalize(data).then(sequence => kalmanfilter(sequence.result)) or something
+   NO! \-> convert to promise dsl for fitness function calls in clairvoyance
+       \-> make a stream provider that passes data from histogram in and provides a promise / callbacks
+       \-> return promise with results
+   IDK! time is less the problem and more memory pressure
+   IDK! -> start with a known number of data points to loop through, and measure the time it takes
+      \-> store a cached map for each fitness function -> metric timing
+      \-> increase iterations each update until threshold is reached
 */
 
-
+console.log('before start')
 // Create and start the application.
 DayMaker.start();
+
+console.log('after start')
 
 
 let updateReceived = false;

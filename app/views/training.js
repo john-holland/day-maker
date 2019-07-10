@@ -1,5 +1,5 @@
 import document from "document";
-import { _ } from '../../common/underscore'
+import { _ } from '../../common/lfn'
 import { $, $at } from '../../common/view'
 import { UserInterface } from '../ui'
 import { vibration } from "haptics"
@@ -13,13 +13,14 @@ make screen to perform manual training for each event type
     \ -> make sure to give ability to reset to default
 */
 
+let $ = $at('#training')
 export class TrainingUI extends UserInterface {
   name = 'training'
   statusText = document.getElementById("status")
 
   eventList = document.getElementById("eventlist")
   trainingAction = document.getElementById("trainingaction")
-  trainingDuration = getElementById("trainingduration")
+  trainingDuration = document.getElementById("trainingduration")
 
   event = undefined
   duration = undefined
@@ -29,6 +30,12 @@ export class TrainingUI extends UserInterface {
   constructor(daymaker) {
     this.daymaker = daymaker
     this.clairvoyance = daymaker.clairvoyance
+    this.$ = $
+    this.el = this.$()
+  }
+
+  onRender() {
+    super.onRender()
   }
 
   starttraining() {
@@ -36,7 +43,7 @@ export class TrainingUI extends UserInterface {
     this.trainingAction.style.display = "none"
     this.trainingDuration.style.display = "none"
 
-    this.buttonlist("#eventlist .item", _.keys(this.clairvoyance.eventprovider.events), event => {
+    this.buttonlist("#eventlist .item", _.keys(this.clairvoyance.eventprovider.events).concat('go back'), event => {
       this.eventList.style.display = "none"
       this.trainingAction.style.display = "inline"
       this.buttonlist("#trainingaction .item", ['override', 'add', 'reset'], action => {

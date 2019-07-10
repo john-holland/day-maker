@@ -5,7 +5,7 @@
   License: MIT
 */
 
-module.exports = {
+export const clusterMaker = {
 
   data: getterSetter([], function(arrayOfArrays) {
     var n = arrayOfArrays[0].length;
@@ -18,8 +18,9 @@ module.exports = {
     var pointsAndCentroids = kmeans(this.data(), {k: this.k(), iterations: this.iterations() });
     var points = pointsAndCentroids.points;
     var centroids = pointsAndCentroids.centroids;
-
+//sequencer add
     return centroids.map(function(centroid) {
+      //sequencer add
       return {
         centroid: centroid.location(),
         points: points.filter(function(point) { return point.label() == centroid.label() }).map(function(point) { return point.location() }),
@@ -33,32 +34,53 @@ module.exports = {
 
 };
 
-function kmeans(data, config) {
+function kmeans(sequencer, data, config) {
+  //sequencer add, 0
   // default k
-  var k = config.k || Math.round(Math.sqrt(data.length / 2));
-  var iterations = config.iterations;
+  let k, iterations, points, centroids
+  sequencer.enqueue(() => {
+    k = config.k || Math.round(Math.sqrt(data.length / 2));
+    iterations = config.iterations;
+  }, data, 0)
 
+  //sequencer enqueue, 1
   // initialize point objects with data
-  var points = data.map(function(vector) { return new Point(vector) });
-
+  sequencer.enqueue(() => {
+    points = data.map(function(vector) { return new Point(vector) });
+  }, points, 1)
+ 
+  //sequencer enqueue, 1
   // intialize centroids randomly
-  var centroids = [];
-  for (var i = 0; i < k; i++) {
-    centroids.push(new Centroid(points[i % points.length].location(), i));
-  };
+  sequencer.enqueue(() => {
+    centroids = []
+    for (var i = 0; i < k; i++) {
+      centroids.push(new Centroid(points[i % points.length].location(), i));
+    };
+  }, points, 1)
 
+  //sequencer add, 1
   // update labels and centroid locations until convergence
-  for (var iter = 0; iter < iterations; iter++) {
-    points.forEach(function(point) { point.updateLabel(centroids) });
-    centroids.forEach(function(centroid) { centroid.updateLocation(points) });
-  };
+  //sequencer.add(() => {
+  //}, points, 2)
 
+  //because this was a prohibitively expensive call, we'll break this for loop up into a schedule of sequences
+  // iterate should be used for anything expected to require more than 37000 operations
+  sequencer.iterate(0, iter => iter < iterations, iter => iter+1,
+    iter => {
+      //sequencer insert, 3, maybe 2? reverse loop for sequence eval?
+      //nested continuation might be better here?
+      // otherwise we'll have to lift a variable in each iteration of the loop, and that could get relatively expensive
+      // whereas nesting the continuation would mean that variables for each point / centroid won't get created until the current sequence is evaluated
+      points.forEach(function(point) { point.updateLabel(centroids) });
+      centroids.forEach(function(centroid) { centroid.updateLocation(points) });
+    }, points, 1)
+
+  //sequencer add, 0
   // return points and centroids
-  return {
+  sequencer.enqueue(() => sequence.resolve({
     points: points,
     centroids: centroids
-  };
-
+  }), [], 0)
 };
 
 // objects

@@ -1,3 +1,19 @@
+import { today, goals } from "user-activity"
+import { battery, charger } from "power"
+import { HeartRateSensor } from "heart-rate"
+import { Barometer } from "barometer"
+import { Gyroscope } from "gyroscope"
+
+/**
+  
+  one option is to save a separate file for each metric time span
+   -> steps_5minutes_1537935402544
+   -> metric_timespan_timestamp
+   
+  this would allow us to unload those after collection, and load only what we need at runtime
+
+ */
+
 class MetricHistogramScheduler {
     histograms = []
     intervalIds = {}
@@ -33,9 +49,9 @@ class MetricHistogramScheduler {
     }
 }
 
-let scheduler = new MetricHistogramScheduler()
+export let scheduler = new MetricHistogramScheduler()
 let noop = function() {}
-class MetricHistogram {
+export class MetricHistogram {
     on = false
     collection = []
 
@@ -94,29 +110,11 @@ class MetricHistogram {
     }
 }
 
-import { today, goals } from "user-activity"
-import { battery, charger } from "power"
-import { HeartRateSensor } from "heart-rate"
-import { Barometer } from "barometer"
-import { Gyroscope } from "gyroscope"
 
-// Create a new instance of the Gyroscope object
-  let data = {
-    accel:,
-    bar: {
-      pressure: bar.pressure ? parseInt(bar.pressure) : 0
-    },
-    hrm: {
-      heartRate: hrm.heartRate ? hrm.heartRate : 0
-    }
-  };
-
-document.onclick = function(evt) {
-  console.log('on click')
-}
 gyro.start()
 bar.start()
 hrm.start()
+
 const ONE_MINUTE = 60 * 1000
 const FIVE_MINUTES = 5 * ONE_MINUTE
 const TEN_MINUTES = 10 * ONE_MINUTE
@@ -125,15 +123,13 @@ let heartRateMonitor = new HeartRateSensor()
 let gyro = new Gyroscope({ frequency: 10 })
 let bar = new Barometer()
 
-let accelerometer = new MetricHistogram('accelerometer', ONE_SECOND, () => { return [gyro.x.toFixed(3), gyro.y.toFixed(3), gyro.z.toFixed(3)] }, () => gyro.start(), () => gyro.stop())
-let barometer = new MetricHistogram('barometer', ONE_SECOND, () => bar.pressure ? parseInt(bar.pressure) : 0, () => bar.start(), () => bar.stop())
-let steps = new MetricHistogram('steps', ONE_MINUTE, () => todayActivity.local.steps || 0)
-let elevation = new MetricHistogram('elevationGain', ONE_MINUTE, () => today.local.elevationGain || 0)
-let hr = new MetricHistogram('hr', ONE_MINUTE, () => heartRateMonitor.heartRate || '--', () => heartRateMonitor.start(), () => heartRateMonitor.stop()) //might have to reinit?
-let power = new MetricHistogram('power', FIVE_MINUTES, () => battery.chargeLevel)
-let incharger = new MetricHistogram('incharger', TEN_MINUTES, () => charger.connected ? 1 : 0)
-let calories = new MetricHistogram('calories', FIVE_MINUTES, () => today.local.calories)
+export let accelerometer = new MetricHistogram('accelerometer', ONE_SECOND, () => { return [gyro.x.toFixed(3), gyro.y.toFixed(3), gyro.z.toFixed(3)] }, () => gyro.start(), () => gyro.stop())
+export let barometer = new MetricHistogram('barometer', ONE_SECOND, () => bar.pressure ? parseInt(bar.pressure) : 0, () => bar.start(), () => bar.stop())
+export let steps = new MetricHistogram('steps', ONE_MINUTE, () => todayActivity.local.steps || 0)
+export let elevation = new MetricHistogram('elevationGain', ONE_MINUTE, () => today.local.elevationGain || 0)
+export let hr = new MetricHistogram('hr', ONE_MINUTE, () => heartRateMonitor.heartRate || '--', () => heartRateMonitor.start(), () => heartRateMonitor.stop()) //might have to reinit?
+export let power = new MetricHistogram('power', FIVE_MINUTES, () => battery.chargeLevel)
+export let incharger = new MetricHistogram('incharger', TEN_MINUTES, () => charger.connected ? 1 : 0)
+export let calories = new MetricHistogram('calories', FIVE_MINUTES, () => today.local.calories)
 
 scheduler.available.concat([steps, elevation, heartRateMonitor, hr, power, incharger, calories, accelerometer, barometer])
-
-export { scheduler, steps, elevation, heartRateMonitor, hr, power, incharger, calories, accelerometer, barometer, MetricHistogram }

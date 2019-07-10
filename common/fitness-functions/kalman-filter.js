@@ -1,3 +1,6 @@
+//speed analysis: constant, likely being used wrong in clairvoyance
+//  has to iterator over the whole data set
+
 /**
 * KalmanFilter
 * @class
@@ -8,7 +11,7 @@
 * @license MIT License
 * @preserve
 */
-export default class KalmanFilter {
+export class KalmanFilter {
 
   /**
   * Create 1-dimensional kalman filter

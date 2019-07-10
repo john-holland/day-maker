@@ -1,6 +1,8 @@
 // transliterated from the python snippet here:
 // http://en.wikipedia.org/wiki/Lanczos_approximation
 
+//speed analysis: constant O(n) +/- insig ops if z is between 0.5 and 100, adjustable
+
 var g = 7;
 var p = [
     0.99999999999980993,
@@ -43,7 +45,7 @@ function lngamma(z) {
     return .5*Math.log(2*Math.PI)+(z+.5)*Math.log(t)-t+Math.log(x)-Math.log(z);
 }
 
-export {
+export default {
   gamma (z) {
     if (z < 0.5) {
         return Math.PI / (Math.sin(Math.PI * z) * gamma(1 - z));

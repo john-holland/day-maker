@@ -1,5 +1,5 @@
 export class MeterWidgetModel {
-  this.started = undefined
+  started = undefined
   
   constructor(widget, interval) {
     this.widget = widget

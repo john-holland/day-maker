@@ -1,4 +1,6 @@
-import chi from './chi-squared.js'
+import { cdf, pdf } from './chi-squared.js'
+
+//speed analysis: O(n^2) chi-squared maybe faces some iteration limits?
 
 //https://github.com/chipbell4/chi-squared-test
 // contributors: chipbell4, JMontagu - license: MIT
@@ -43,19 +45,18 @@ var calculateChiSquaredStatistic = function(observations, expectations) {
  * @param degreesOfFreedomReduction The reduction in degrees of freedom. In general this is p + 1, where p is the number
  *                                  of parameters estimated
  */
-let chiSquaredTest = function(observations, expectations, degreesOfFreedomReduction) {
-  var degreesOfFreedom = observations.length - degreesOfFreedomReduction
+export let chiSquaredTest = function(sequence, observations, expectations, degreesOfFreedomReduction) {
+  return sequence.add(() => {
+    var degreesOfFreedom = observations.length - degreesOfFreedomReduction
 
-  var resultSet = calculateChiSquaredStatistic(observations, expectations)
-  resultSet.probability = 1 - chi.cdf(resultSet.chiSquared, degreesOfFreedom)
-  return resultSet;
+    var resultSet = calculateChiSquaredStatistic(observations, expectations)
+    resultSet.probability = 1 - chi.cdf(resultSet.chiSquared, degreesOfFreedom)
+    sequence.resolve(resultSet)
+  }, observations, 1)
 }
 
-export {
-  chiSquaredTest: chiSquaredTest,
-  chiSquaredFitness(data, training) {
-    return chiSquaredTest(data, training, 1).probability
-  }
+export let chiSquaredFitness = function(sequence, data, training) {
+  return new Promise((resolve, reject) => chiSquaredTest(sequence, data, training, 1).then(result => resolve(result.probability)))
 }
 
 /**

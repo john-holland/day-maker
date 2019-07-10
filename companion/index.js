@@ -4,6 +4,7 @@
  */
 
 import { settingsStorage } from "settings";
+import { localStorage } from 'local-storage';
 import { outbox } from "file-transfer";
 import { device } from "peer";
 
@@ -134,14 +135,14 @@ settingsStorage.onchange = function(evt) {
 }
 
 messaging.peerSocket.onmessage = function({data}) {  
-  let { name, data } = data
+  let { name, dat } = data
   
   if (name === 'settings') {
-    _.keys(data).forEach(key => settingsStorage.setItem(key, data[key]))
+    _.keys(dat).forEach(key => settingsStorage.setItem(key, dat[key]))
   } else if (name === 'training') {
     console.log('received new training data')
       
-    persistData(data)
+    persistData(dat)
     //save data locally:
     //  https://dev.fitbit.com/build/reference/companion-api/storage/ 
     //then:

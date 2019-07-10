@@ -1,11 +1,12 @@
 import document from "document";
-import { _ } from '../../common/underscore'
+import { _ } from '../../common/lfn'
 import { $, $at } from '../../common/view'
 import { UserInterface } from '../ui'
 import { vibration } from "haptics"
 import { PeerMessageQueue } from "../../common/peermessagequeue"
 
 let messagequeue = new PeerMessageQueue()
+let $ = $at('#settings')
 
 export class SettingsUI extends UserInterface {
   name = 'settings'
@@ -13,10 +14,16 @@ export class SettingsUI extends UserInterface {
 
   constructor(daymaker) {
     this.daymaker = daymaker
-    
-    this.buttonlist('#settings-list .items', ['training', 'toggle alarm'], setting => {
+    this.$ = $
+    this.el = this.$()
+  }
+
+  onMount() {
+    //this.el.style.display = 'inline';
+    console.log('mount settings')
+    this.buttonlist('#settings-list .item', ['training', 'toggle alarm', 'go back'], setting => {
       if (setting == 'training') {
-        this.daymaker.trainingUI.starttraining()
+        this.daymaker.training.starttraining()
       } else if (setting == 'toggle alarm') {
         this.daymaker.alarm.alarmEnabled = !this.daymaker.alarm.alarmEnabled
         this.daymaker.alarm.disableAlarm = !this.daymaker.alarm.disableAlarm
@@ -27,21 +34,33 @@ export class SettingsUI extends UserInterface {
             disableAlarm: this.daymaker.alarm.disableAlarm            
           }
         })
+      } else {
+        this.daymaker.switchBackToDefault()
       }
     })
+  }
+	
+  onRender() {
+    super.onRender()
   }
 
   buttonlist(listselector, events, callback) {
     vibration.start('nudge-max')
+    console.log('buttonlist selector: ' + listselector)
     
     //ok this uses static list assets, 
     let items = this.$(listselector)
+    console.log('events ' + events.join(', '))
+    console.log('items ' + items.map(i => i.text).join(', '))
     
     items.forEach(function(element, index) {
-      if (index > items.length - 1) {
-        element.display = 'none'
+      if (index > events.length - 1) {
+        console.log('hiding item: ' + index)
+        element.style.display = 'none'
       } else {
-        element.display = 'inline'
+        console.log('showing item: ' + events[index] + ' ' + index)
+        element.style.display = 'inline'
+        element.show()
       }
       
       let touch = element.getElementById("touch-me")

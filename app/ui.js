@@ -87,8 +87,8 @@ export class UserInterface extends View {
 
 	onRender() {
     let { today, updateReceived } = this
-    if (!('today' in this) || !('updateReceived' in this)) return;
-		
+    if (!('today' in this) || !('updateReceived' in this)) return
+		if (this.name == 'settings' || this.name == 'training' || this.name == 'eventconfirmation') return
     let hours = today.getHours()
 		let minutes = today.getMinutes()
 		let steps = this.alarm.buzzing ? this.alarm.stepsToGo() : this.alarm.steps
@@ -283,7 +283,7 @@ export class UserInterface extends View {
   showingWakeupImage = false
   backgroundTransitionDuration = 5000
   showOrHideWakeupImage() {
-    
+    this.backgroundImageEl.image = '/private/data/background.jpg'
     let showbackground = !this.showingWakeupImage && this.alarm.showSunrise()
     let hidebackground = this.showingWakeupImage && !this.alarm.showSunrise()
     let doNothing = !(showbackground || hidebackground)
